@@ -233,8 +233,8 @@ class NotepadCanvas {
     // Move to the first point, and call `drawTo` on the rest.
     if (stroke.points.length > 1) {
       // const brush = new PenBrush();
-      const brush = Brush.getBrush(stroke.brush);
       this.prepareStroke(stroke);
+      const brush = Brush.getBrush(stroke.brush, stroke);
       brush.setPosition(stroke.points[0]);
       for(let i = 1; i < stroke.points.length; i++) {
         this.drawTo(brush, stroke.points[i]);
@@ -261,12 +261,12 @@ class NotepadCanvas {
 }
 
 class Brush {
-  static getBrush = brushName => {
+  static getBrush = (brushName, stroke) => {
     switch (brushName) {
       case "pen":
-        return new PenBrush();
+        return new PenBrush(stroke);
       case "eraser":
-        return new EraserBrush();
+        return new EraserBrush(stroke);
       default:
         console.warn("Brush not found:", brushName);
     }
@@ -280,7 +280,7 @@ class PenBrush {
     this.position = { x: 0, y: 0 };
     this.control = { x: 0, y: 0 };
     this.minWidth = opts.minWidth || 0;
-    this.maxWidth = opts.maxWidth || 8;
+    this.maxWidth = opts.size || 8;
 
     this.getWidth = this.getWidth.bind(this);
     this.setPosition = this.setPosition.bind(this);
@@ -330,7 +330,7 @@ class EraserBrush {
   constructor(opts) {
     opts = opts || {};
     this.brushName = "eraser";
-    this.size = opts.size || 30;
+    this.size = opts.size || 8;
 
     this.setPosition = this.setPosition.bind(this);
     this.drawTo = this.drawTo.bind(this);
@@ -369,16 +369,16 @@ class Notepad {
     this.addStroke = this.addStroke.bind(this);
     this.resize = this.resize.bind(this);
     this.setOption = this.setOption.bind(this);
-    this.setBrush = this.setBrush.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
-    this.brush = new PenBrush();
+    this.brush = null;
     this.canvas = new NotepadCanvas(canvasEl);
     this.strokeHistory = new StrokeHistory(imageData.strokes);
     this.curStroke = {
       color: 'black',
-      brush: this.brush.brushName,
+      brush: 'pen',
+      size: 8,
       points: []
     }; // holds the stroke currently being drawn
 
@@ -412,10 +412,10 @@ class Notepad {
 
   penDown(event) {
     this.isDrawing = true;
-    this.brush.setPosition(event.detail);
     this.canvas.prepareStroke(this.curStroke);
-    this.curStroke.brush = this.brush.brushName;
     this.curStroke.points.push(event.detail);
+    this.brush = Brush.getBrush(this.curStroke.brush, this.curStroke);
+    this.brush.setPosition(event.detail);
   }
 
   penUp(event) {
@@ -475,26 +475,16 @@ class Notepad {
   setOption(option, value) {
     switch(option) {
       case "brush":
-        this.setBrush(value);
+        this.curStroke.brush = value;
         break;
       case "color":
         this.curStroke.color = value;
         break;
+      case "brushSize":
+        this.curStroke.size = value;
+        break;
       default:
         console.warn("Unrecognized notepad option:", option);
-    }
-  }
-
-  setBrush(brushName) {
-    switch (brushName) {
-      case "pen":
-        this.brush = new PenBrush();
-        break;
-      case "eraser":
-        this.brush = new EraserBrush();
-        break;
-      default:
-        console.warn("Unrecognized brush selected:", brushName);
     }
   }
 
