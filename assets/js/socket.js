@@ -57,6 +57,9 @@ socket.connect()
 
 document.addEventListener("notepad:ready", event => {
   const notepad = event.detail;
+  window.addEventListener("resize", () => {
+    notepad.resize();
+  });
 
   let channel = socket.channel("board:lobby", {})
 

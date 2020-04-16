@@ -326,26 +326,23 @@ class Notepad {
    * also keeps track of the stroke currently being drawn.
    */
 
-  constructor(canvas, imageData) {
+  constructor(canvasEl, imageData) {
     this.penDown = this.penDown.bind(this);
     this.penUp = this.penUp.bind(this);
     this.penMove = this.penMove.bind(this);
     this.undo = this.undo.bind(this);
     this.redo = this.redo.bind(this);
     this.getImageData = this.getImageData.bind(this);
+    this.addStroke = this.addStroke.bind(this);
+    this.resize = this.resize.bind(this);
 
+    this.canvasEl = canvasEl;
     this.pen = new Pen();
-    this.canvas = new NotepadCanvas(canvas, this.pen);
+    this.canvas = new NotepadCanvas(canvasEl, this.pen);
     this.strokeHistory = new StrokeHistory(imageData.strokes);
     this.curStroke = []; // holds the stroke currently being drawn
 
-    // Here we set the canvas's logical pixels to match the actual number of
-    // device pixels. We have to adjust the style size to compensate.
-    let rect = canvas.getBoundingClientRect();
-    canvas.width = window.devicePixelRatio*rect.width;
-    canvas.height = window.devicePixelRatio*rect.height;
-    canvas.style.width = rect.width + "px";
-    canvas.style.height = rect.height + "px";
+    this.resize();
 
     // These are our custom events
     new Event("pendown");
@@ -357,19 +354,19 @@ class Notepad {
     new Event("notepad:stroke");
 
     // Set up the input handlers
-    this.mouse = new MouseInput(canvas);
-    this.stylus = new StylusInput(canvas);
-    this.keyboard = new KeyboardInput(canvas);
+    this.mouse = new MouseInput(canvasEl);
+    this.stylus = new StylusInput(canvasEl);
+    this.keyboard = new KeyboardInput(canvasEl);
 
     // Bind our methods to our custom events
-    canvas.addEventListener("pendown", this.penDown);
-    canvas.addEventListener("penup", this.penUp);
-    canvas.addEventListener("penmove", this.penMove);
-    canvas.addEventListener("undo", this.undo);
-    canvas.addEventListener("redo", this.redo);
+    canvasEl.addEventListener("pendown", this.penDown);
+    canvasEl.addEventListener("penup", this.penUp);
+    canvasEl.addEventListener("penmove", this.penMove);
+    canvasEl.addEventListener("undo", this.undo);
+    canvasEl.addEventListener("redo", this.redo);
 
     // Refresh the canvas in case we had some initial stroke data
-    this.canvas.refresh(this.strokeHistory);
+    this.resize();
     document.dispatchEvent(new CustomEvent("notepad:ready", { detail: this }));
   }
 
@@ -417,6 +414,18 @@ class Notepad {
     this.strokeHistory.addStroke(stroke);
     this.canvas.refresh(this.strokeHistory);
     this.canvas.drawStroke(this.curStroke);
+  }
+
+  resize() {
+    // Here we set the canvas's logical pixels to match the actual number of
+    // device pixels. We have to adjust the style size to compensate.
+    let rect = this.canvasEl.getBoundingClientRect();
+    this.canvasEl.width = window.devicePixelRatio*rect.width;
+    this.canvasEl.height = window.devicePixelRatio*rect.height;
+    this.canvasEl.style.width = rect.width + "px";
+    this.canvasEl.style.height = rect.height + "px";
+
+    this.canvas.refresh(this.strokeHistory);
   }
 
 }
