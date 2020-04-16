@@ -5,8 +5,8 @@ defmodule WhiteboardWeb.BoardChannel do
     {:ok, socket}
   end
 
-  def handle_in("stroke", payload, socket) do
-    broadcast socket, "stroke", payload
+  def handle_in("notepad-cmd", payload, socket) do
+    broadcast socket, "notepad-cmd", payload
     {:noreply, socket}
   end
 

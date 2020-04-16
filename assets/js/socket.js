@@ -14,12 +14,31 @@ window.joinBoard = (boardCode) => {
     let channel = socket.channel(`board:${boardCode}`, {})
 
     document.addEventListener("notepad:stroke", event => {
-      channel.push("stroke", event.detail);
+      channel.push("notepad-cmd", { type: "stroke", stroke: event.detail.stroke });
+    });
+    document.addEventListener("notepad:undo", event => {
+      channel.push("notepad-cmd", { type: "undo" });
+    });
+    document.addEventListener("notepad:redo", event => {
+      channel.push("notepad-cmd", { type: "redo" });
     });
 
-    channel.on("stroke", payload => {
-      notepad.addStroke(payload.stroke);
-    })
+    channel.on("notepad-cmd", payload => {
+      switch(payload.type) {
+        case "stroke":
+          console.log("adding stroke", payload.stroke);
+          notepad.addStroke(payload.stroke);
+          break;
+        case "undo":
+          notepad.undo();
+          break;
+        case "redo":
+          notepad.redo();
+          break;
+        default:
+          console.warn("Recieved unknown notepad command:", payload);
+      }
+    });
 
     channel.join()
       .receive("ok", resp => { console.log("Joined successfully", resp) })

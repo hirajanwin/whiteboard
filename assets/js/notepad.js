@@ -362,12 +362,12 @@ class Notepad {
     canvasEl.addEventListener("pendown", this.penDown);
     canvasEl.addEventListener("penup", this.penUp);
     canvasEl.addEventListener("penmove", this.penMove);
-    canvasEl.addEventListener("undo", this.undo);
-    canvasEl.addEventListener("redo", this.redo);
+    canvasEl.addEventListener("undo", () => this.broadcast("undo"));
+    canvasEl.addEventListener("redo", () => this.broadcast("redo"));
 
     // Refresh the canvas in case we had some initial stroke data
     this.resize();
-    document.dispatchEvent(new CustomEvent("notepad:ready", { detail: this }));
+    this.broadcast("ready", this);
   }
 
   penDown(event) {
@@ -379,10 +379,7 @@ class Notepad {
   penUp(event) {
     if (this.pen.drawing) {
       this.pen.drawing = false;
-      this.strokeHistory.addStroke(this.curStroke);
-      document.dispatchEvent(new CustomEvent("notepad:stroke", {
-        detail: { stroke: this.curStroke }
-      }));
+      this.broadcast("stroke", { stroke: this.curStroke });
       this.curStroke = [];
     }
   }
@@ -426,6 +423,12 @@ class Notepad {
     this.canvasEl.style.height = rect.height + "px";
 
     this.canvas.refresh(this.strokeHistory);
+  }
+
+  broadcast(event, data) {
+    document.dispatchEvent(new CustomEvent(`notepad:${event}`, {
+      detail: data
+    }));
   }
 
 }
