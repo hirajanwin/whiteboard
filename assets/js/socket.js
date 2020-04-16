@@ -26,7 +26,6 @@ window.joinBoard = (boardCode) => {
     channel.on("notepad-cmd", payload => {
       switch(payload.type) {
         case "stroke":
-          console.log("adding stroke", payload.stroke);
           notepad.addStroke(payload.stroke);
           break;
         case "undo":

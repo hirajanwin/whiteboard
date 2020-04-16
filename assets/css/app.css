@@ -23,7 +23,7 @@ input[type="submit"] {
   border-radius: 3px;
   line-height: 1.5;
   padding: 2px 8px;
-  -webkit-appearance: button;
+  -webkit-appearance: none;
   text-decoration: none;
   color: #331f00;
   cursor: pointer;
@@ -84,4 +84,28 @@ input[type="submit"]:hover {
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
   border-right: 1px solid #331f00;
+}
+
+.toolbox {
+  border-bottom: 1px solid #ccc5ba;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+}
+
+.icon-button {
+  padding: 4px 4px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  border: none;
+  display: block;
+  background-image: url('/images/pen1.svg');
+  background-size: 34px 34px;
+  filter: grayscale(100%);
+}
+.icon-button:checked {
+  filter: none;
 }

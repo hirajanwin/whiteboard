@@ -1,16 +1,26 @@
 // this initializes all notepads on the page
 document.addEventListener("DOMContentLoaded", () => {
 
-  const targets = Array.from(document.querySelectorAll("canvas[data-notepad]"));
-  targets.map(target => {
+  const $targets = Array.from(document.querySelectorAll("canvas[data-notepad]"));
+  $targets.map($target => {
     // try to parse image data, if it's supplied
     let imageData = {strokes: []};
     try {
-      imageData = JSON.parse(target.dataset.notepad);
+      imageData = JSON.parse($target.dataset.notepad-image);
     } catch (e) {}
 
     // create the notepad instance and bind it to the element
-    target.notepad = new Notepad(target, imageData);
+    notepad = new Notepad($target, imageData);
+    $target.notepad = notepad;
+
+    // look for notepad controls and bind them
+    const notepadName = $target.dataset.notepad;
+    const $toolTargets = Array.from(document.querySelectorAll(`input[data-for-notepad=${notepadName}]`));
+    $toolTargets.map($tool => {
+      $tool.addEventListener("change", event => {
+        notepad.setOption(event.target.name, event.target.value);
+      });
+    });
   });
 
 });
@@ -227,8 +237,7 @@ class NotepadCanvas {
     // This simply draws a line to a new point, and updates the pen position.
 
     this.context.beginPath();
-    this.context.strokeStyle = this.pen.color;
-    this.context.lineWidth = this.pen.getWidth(point.force);
+    this.pen.prepareContext(this.context, point);
 
     this.context.moveTo(this.pen.position.x, this.pen.position.y);
     this.context.lineTo(point.x, point.y);
@@ -247,8 +256,7 @@ class NotepadCanvas {
     // be small enough not to matter.
 
     this.context.beginPath();
-    this.context.strokeStyle = this.pen.color;
-    this.context.lineWidth = this.pen.getWidth(point.force);
+    this.pen.prepareContext(this.context, point);
 
     this.context.moveTo(this.pen.position.x, this.pen.position.y);
 
@@ -270,13 +278,13 @@ class NotepadCanvas {
     this.pen.control = { x: point.x, y: point.y };
   }
 
-  drawStroke(points) {
+  drawStroke(stroke) {
+    debugger;
     // Move to the first point, and call `drawTo` on the rest.
-    if (points.length > 1) {
-      this.pen.position = { x: points[0].x, y: points[0].y };
-      this.pen.control = { x: points[0].x, y: points[0].y };
-      for(let i = 1; i < points.length; i++) {
-        this.drawTo(points[i]);
+    if (stroke.points.length > 1) {
+      this.pen.matchStroke(stroke);
+      for(let i = 1; i < stroke.points.length; i++) {
+        this.drawTo(stroke.points[i]);
       }
     }
   }
@@ -300,22 +308,82 @@ class Pen {
    * support a "fountain pen" type brush, which varies the stroke width based on
    * pressure.
    */
+
   constructor() {
     this.position = { x: 0, y: 0 };
     this.control = { x: 0, y: 0 }; // this is used for "smooth" drawing
     this.color = 'black';
     this.drawing = false;
+    this.brushName = "pen";
+    this.brushes = {
+      pen: new PenBrush(this),
+      eraser: new EraserBrush(this)
+    };
 
+    this.setBrush = this.setBrush.bind(this);
+    this.setColor = this.setColor.bind(this);
+    this.prepareContext = this.prepareContext.bind(this);
+    this.matchStroke = this.matchStroke.bind(this);
+  }
+
+  setBrush(brushName) {
+    if (this.brushes[brushName]) {
+      this.brushName = brushName;
+    }
+  }
+
+  setColor(color) {
+    this.color = color;
+  }
+
+  prepareContext(context, point) {
+    context.strokeStyle = this.color;
+    this.brushes[this.brushName].applyToContext(context, point);
+  }
+
+  matchStroke(stroke) {
+    this.position = { x: stroke.points[0].x, y: stroke.points[0].y };
+    this.control = { x: stroke.points[0].x, y: stroke.points[0].y };
+    this.color = stroke.color;
+    this.brushName = stroke.brush;
+  }
+}
+
+class PenBrush {
+  constructor(pen, opts) {
+    opts = opts || {};
+    this.pen = pen;
+    this.minWidth = opts.minWidth || 0;
+    this.maxWidth = opts.maxWidth || 8;
+
+    this.applyToContext = this.applyToContext.bind(this);
     this.getWidth = this.getWidth.bind(this);
   }
 
-  getWidth(force) {
-    const min = 0;
-    const max = 8;
+  applyToContext(context, point) {
+    context.lineWidth = this.getWidth(point.force);
+  }
 
+  getWidth(force) {
     // Linear interpolation. We could customize this to make the pen feel
     // different
-    return min + force * (max - min);
+    return this.minWidth + force * (this.maxWidth - this.minWidth);
+  }
+}
+
+class EraserBrush {
+  constructor(pen, opts) {
+    opts = opts || {};
+    this.pen = pen;
+    this.size = opts.size || 8;
+
+    this.applyToContext = this.applyToContext.bind(this);
+  }
+
+  applyToContext(context, point) {
+    context.globalCompositeOperation = "destination-out";
+    context.strokeStyle = "rgba(255,255,255,1)";
+    context.lineWidth = this.size;
   }
 }
 
@@ -335,12 +403,17 @@ class Notepad {
     this.getImageData = this.getImageData.bind(this);
     this.addStroke = this.addStroke.bind(this);
     this.resize = this.resize.bind(this);
+    this.setOption = this.setOption.bind(this);
 
     this.canvasEl = canvasEl;
     this.pen = new Pen();
     this.canvas = new NotepadCanvas(canvasEl, this.pen);
     this.strokeHistory = new StrokeHistory(imageData.strokes);
-    this.curStroke = []; // holds the stroke currently being drawn
+    this.curStroke = {
+      color: this.pen.color,
+      brush: this.pen.brushName,
+      points: []
+    }; // holds the stroke currently being drawn
 
     this.resize();
 
@@ -374,20 +447,22 @@ class Notepad {
     this.pen.drawing = true;
     this.pen.position = { x: event.detail.x, y: event.detail.y };
     this.pen.control = { x: this.pen.x, y: this.pen.y };
+    this.curStroke.color = this.pen.color;
+    this.curStroke.brush = this.pen.brushName;
   }
 
   penUp(event) {
     if (this.pen.drawing) {
       this.pen.drawing = false;
       this.broadcast("stroke", { stroke: this.curStroke });
-      this.curStroke = [];
+      this.curStroke.points = [];
     }
   }
 
   penMove(event) {
     if (this.pen.drawing) {
       this.canvas.drawTo(event.detail);
-      this.curStroke.push(event.detail);
+      this.curStroke.points.push(event.detail);
     }
   }
 
@@ -410,7 +485,6 @@ class Notepad {
   addStroke(stroke) {
     this.strokeHistory.addStroke(stroke);
     this.canvas.refresh(this.strokeHistory);
-    this.canvas.drawStroke(this.curStroke);
   }
 
   resize() {
@@ -429,6 +503,19 @@ class Notepad {
     document.dispatchEvent(new CustomEvent(`notepad:${event}`, {
       detail: data
     }));
+  }
+
+  setOption(option, value) {
+    switch(option) {
+      case "brush":
+        this.pen.setBrush(value);
+        break;
+      case "color":
+        this.pen.setColor(value);
+        break;
+      default:
+        console.warn("Unrecognized notepad option:", option);
+    }
   }
 
 }

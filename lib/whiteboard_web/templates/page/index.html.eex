@@ -1,5 +1,9 @@
-<section class="section --full-width hstack">
-  <canvas id="board" data-notepad class="fill"></canvas>
+<section class="section --full-width vstack">
+  <div class="toolbox">
+    <input class="icon-button" type="radio" name="brush" value="pen" data-for-notepad="whiteboard" style="background-image: url('/images/pen.svg')" checked />
+    <input class="icon-button" type="radio" name="brush" value="eraser" data-for-notepad="whiteboard" style="background-image: url('/images/eraser.svg')" />
+  </div>
+  <canvas id="board" data-notepad="whiteboard" class="fill"></canvas>
 </section>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
