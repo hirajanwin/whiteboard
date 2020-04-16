@@ -106,14 +106,14 @@ input[type="submit"]:hover {
   cursor: pointer;
   -moz-appearance: none;
   -webkit-appearance: none;
-  border: none;
   display: block;
   background-size: 34px 34px;
-  border-radius: 0;
 }
 
 .toolbox .toolbox__button.--brush {
   filter: grayscale(100%);
+  border-radius: 0;
+  border: none;
 }
 .toolbox .toolbox__button.--brush:checked {
   filter: none;
@@ -124,6 +124,7 @@ input[type="submit"]:hover {
   margin: 4px 2px;
   width: 30px;
   height: 30px;
+  border: none;
 }
 .toolbox .toolbox__button.--color:checked {
   /*border: 4px solid #ccc5ba;*/
@@ -151,3 +152,20 @@ input[type="submit"]:hover {
   border: 1px solid #ccc5ba;
 }
 
+.toolbox button.toolbox__button {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  margin: 4px;
+  line-height: 30px;
+}
+
+.notepad {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

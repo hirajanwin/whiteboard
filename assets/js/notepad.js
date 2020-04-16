@@ -15,10 +15,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // look for notepad controls and bind them
     const notepadName = $target.dataset.notepad;
-    const $toolTargets = Array.from(document.querySelectorAll(`input[data-for-notepad=${notepadName}]`));
+    let $toolTargets = Array.from(document.querySelectorAll(`input[data-for-notepad=${notepadName}]`));
     $toolTargets.map($tool => {
       $tool.addEventListener("change", event => {
         notepad.setOption(event.target.name, event.target.value);
+      });
+    });
+    $toolTargets = Array.from(document.querySelectorAll(`button[data-for-notepad=${notepadName}]`));
+    $toolTargets.map($tool => {
+      $tool.addEventListener("click", event => {
+        const command = event.target.dataset.notepadCmd;
+        notepad.cmd(command);
       });
     });
   });
@@ -120,63 +127,58 @@ class MouseInput {
   }
 }
 
-class StylusInput {
-  /* This translates touch events into our custom notepad events.
-   *
-   * X and Y coordinates are reported relative to the top-left corner of the
-   * canvas in "pendown" and "penmove" custom events. They're also scaled
-   * according to the devices pixel ratio, to support retina displays. This is
-   * why strokes look jagged on an iPad — the browser reports the "CSS pixel"
-   * location of touch events, not the actual retina pixel value, so when we
-   * scale it up by the device pixel ratio, the pixels look chunky.
-   */
-
+class TouchInput {
   constructor(target) {
+    this.numTouches = 0;
+    this.drawing = false;
+
     target.addEventListener("touchstart", this.ontouchstart);
     target.addEventListener("touchend", this.ontouchend);
     target.addEventListener("touchmove", this.ontouchmove);
     target.addEventListener("touchcancel", this.ontouchcancel);
+    target.addEventListener("gesturestart", this.ongesturestart);
+    target.addEventListener("gesturechange", this.ongesturechange);
+    target.addEventListener("gestureend", this.ongestureend);
   }
 
   ontouchstart(event) {
+    event.preventDefault();
+    this.numTouches = event.touches.length;
+
     // We only want to draw with the stylus, not our fingers, so we check for
     // a "stylus" type
-    let stylusTouch = Array.from(event.touches).find(t => t.touchType === "stylus");
-    if (stylusTouch) {
-      event.preventDefault(); // prevents scrolling, zooming, etc.
+    let stylus = Array.from(event.touches).find(t => t.touchType === "stylus");
+    if (stylus) {
+      this.drawing = true;
       let rect = event.target.getBoundingClientRect();
       event.target.dispatchEvent(new CustomEvent("pendown", {
         detail: {
-          x: window.devicePixelRatio*(stylusTouch.clientX - rect.x),
-          y: window.devicePixelRatio*(stylusTouch.clientY - rect.y),
+          x: window.devicePixelRatio*(stylus.clientX - rect.x),
+          y: window.devicePixelRatio*(stylus.clientY - rect.y),
         }
       }));
-    } else {
-      // We touched with fingers, so let's check for undo and redo taps
-      if (event.touches.length == 2) {
-        event.target.dispatchEvent(new CustomEvent("undo"));
-      } else if (event.touches.length == 3) {
-        event.target.dispatchEvent(new CustomEvent("redo"));
-      }
     }
   }
 
   ontouchend(event) {
-    event.preventDefault();
-    event.target.dispatchEvent(new CustomEvent("penup"));
+    event.preventDefault(); // prevents scrolling, zooming, etc.
+    if (this.drawing) {
+      this.drawing = false;
+      event.target.dispatchEvent(new CustomEvent("penup"));
+    }
   }
 
   ontouchmove(event) {
     // Again, only look for "stylus" touches
-    let touch = Array.from(event.touches).find(t => t.touchType === "stylus");
-    if (touch) {
+    let stylus = Array.from(event.touches).find(t => t.touchType === "stylus");
+    if (stylus) {
       event.preventDefault(); // prevents scrolling, zooming, etc.
       let rect = event.target.getBoundingClientRect();
       event.target.dispatchEvent(new CustomEvent("penmove", {
         detail: {
-          x: window.devicePixelRatio*(touch.clientX - rect.x),
-          y: window.devicePixelRatio*(touch.clientY - rect.y),
-          force: touch.force
+          x: window.devicePixelRatio*(stylus.clientX - rect.x),
+          y: window.devicePixelRatio*(stylus.clientY - rect.y),
+          force: stylus.force
         }
       }));
     }
@@ -186,6 +188,30 @@ class StylusInput {
     event.preventDefault();
     event.target.dispatchEvent(new CustomEvent("penup"));
   }
+
+  ongesturestart(event) {
+    event.preventDefault();
+  }
+
+  ongesturechange(event) {
+    event.preventDefault();
+    event.target.dispatchEvent(new CustomEvent("zoom", { detail: event.scale }));
+  }
+
+  ongestureend(event) {
+    event.preventDefault();
+    if (event.scale < 0.95 || event.scale > 1.05) {
+      event.target.dispatchEvent(new CustomEvent("zoomend", { detail: event.scale }));
+    } else {
+      // tap
+      if (this.numTouches === 2) {
+        event.target.dispatchEvent(new CustomEvent("undo"));
+      } else if (this.numTouches === 3) {
+        event.target.dispatchEvent(new CustomEvent("redo"));
+      }
+    }
+  }
+
 }
 
 class KeyboardInput {
@@ -217,12 +243,16 @@ class NotepadCanvas {
   constructor(canvas) {
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
+    this.baseScale = 1;
 
     this.drawTo = this.drawTo.bind(this);
     this.drawStroke = this.drawStroke.bind(this);
     this.prepareStroke = this.prepareStroke.bind(this);
     this.refresh = this.refresh.bind(this);
     this.clear = this.clear.bind(this);
+    this.relativeScale = this.relativeScale.bind(this);
+    this.setScale = this.setScale.bind(this);
+    this.drawGrid = this.drawGrid.bind(this);
   }
 
   drawTo(brush, point) {
@@ -251,11 +281,29 @@ class NotepadCanvas {
     // Clears the canvas and draws all of the current strokes again. Useful for
     // updating the canvas after undo or redo.
     this.clear();
+    this.drawGrid();
     strokeHistory.currentStrokes().map(this.drawStroke);
   }
 
   clear() {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  relativeScale(amount) {
+    this.context.setTransform(this.baseScale*amount, 0, 0, this.baseScale*amount, 0, 0);
+  }
+
+  setScale(amount) {
+    console.log("Setting scale to ", amount);
+    this.baseScale = amount;
+  }
+
+  drawGrid() {
+    for (let x = 0; x < this.canvas.width; x += 100) {
+      for (let y = 0; y < this.canvas.height; y += 100) {
+        this.context.fillRect(x, y, window.devicePixelRatio*2, window.devicePixelRatio*2);
+      }
+    }
   }
 
 }
@@ -369,6 +417,9 @@ class Notepad {
     this.addStroke = this.addStroke.bind(this);
     this.resize = this.resize.bind(this);
     this.setOption = this.setOption.bind(this);
+    this.zoom = this.zoom.bind(this);
+    this.zoomend = this.zoomend.bind(this);
+    this.cmd = this.cmd.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
@@ -382,20 +433,20 @@ class Notepad {
       points: []
     }; // holds the stroke currently being drawn
 
-    this.resize();
-
     // These are our custom events
     new Event("pendown");
     new Event("penup");
     new Event("penmove");
     new Event("undo");
     new Event("redo");
+    new Event("zoom");
+    new Event("zoomend");
     new Event("notepad:ready");
     new Event("notepad:stroke");
 
     // Set up the input handlers
     this.mouse = new MouseInput(canvasEl);
-    this.stylus = new StylusInput(canvasEl);
+    this.touch = new TouchInput(canvasEl);
     this.keyboard = new KeyboardInput(canvasEl);
 
     // Bind our methods to our custom events
@@ -404,6 +455,8 @@ class Notepad {
     canvasEl.addEventListener("penmove", this.penMove);
     canvasEl.addEventListener("undo", () => this.broadcast("undo"));
     canvasEl.addEventListener("redo", () => this.broadcast("redo"));
+    canvasEl.addEventListener("zoom", this.zoom);
+    canvasEl.addEventListener("zoomend", this.zoomend);
 
     // Refresh the canvas in case we had some initial stroke data
     this.resize();
@@ -485,6 +538,31 @@ class Notepad {
         break;
       default:
         console.warn("Unrecognized notepad option:", option);
+    }
+  }
+
+  zoom(event) {
+    this.canvas.relativeScale(event.detail);
+    this.canvas.refresh(this.strokeHistory);
+  }
+
+  zoomend(event) {
+    this.canvas.setScale(event.detail);
+    this.canvas.refresh(this.strokeHistory);
+  }
+
+  cmd(command) {
+    switch(command) {
+      case "zoom-in":
+        this.canvas.scale(1.2);
+        this.canvas.refresh(this.strokeHistory);
+        break;
+      case "zoom-out":
+        this.canvas.scale(0.8);
+        this.canvas.refresh(this.strokeHistory);
+        break;
+      default:
+        console.warn("Unrecognized notepad command:", command);
     }
   }
 
