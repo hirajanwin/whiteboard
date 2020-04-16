@@ -220,6 +220,7 @@ class NotepadCanvas {
 
     this.drawTo = this.drawTo.bind(this);
     this.drawStroke = this.drawStroke.bind(this);
+    this.prepareStroke = this.prepareStroke.bind(this);
     this.refresh = this.refresh.bind(this);
     this.clear = this.clear.bind(this);
   }
@@ -233,11 +234,17 @@ class NotepadCanvas {
     if (stroke.points.length > 1) {
       // const brush = new PenBrush();
       const brush = Brush.getBrush(stroke.brush);
+      this.prepareStroke(stroke);
       brush.setPosition(stroke.points[0]);
       for(let i = 1; i < stroke.points.length; i++) {
         this.drawTo(brush, stroke.points[i]);
       }
     }
+  }
+
+  prepareStroke(stroke) {
+    this.context.strokeStyle = stroke.color;
+    this.context.fillStyle = stroke.color;
   }
 
   refresh(strokeHistory) {
@@ -295,7 +302,6 @@ class PenBrush {
 
   drawTo(point, context) {
     context.beginPath();
-    context.strokeStyle = 'black';
     context.globalCompositeOperation = "source-over";
     context.lineWidth = this.getWidth(point.force);
 
@@ -407,6 +413,7 @@ class Notepad {
   penDown(event) {
     this.isDrawing = true;
     this.brush.setPosition(event.detail);
+    this.canvas.prepareStroke(this.curStroke);
     this.curStroke.brush = this.brush.brushName;
     this.curStroke.points.push(event.detail);
   }
@@ -471,7 +478,7 @@ class Notepad {
         this.setBrush(value);
         break;
       case "color":
-        this.pen.setColor(value);
+        this.curStroke.color = value;
         break;
       default:
         console.warn("Unrecognized notepad option:", option);
