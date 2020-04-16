@@ -1,3 +1,87 @@
 /* This file is for your main application css. */
 
-@import "./phoenix.css";
+/*@import "./phoenix.css";*/
+/*@import "./theme.css";*/
+@import "./normalize.css";
+@import "./typography.css";
+@import "./accessibility.css";
+@import "./layout.css";
+
+.alert {
+  margin: 0;
+}
+.alert.alert-danger {
+  color: red;
+}
+
+button,
+.button,
+input[type="submit"] {
+  display: inline-block;
+  background: none;
+  border: 1px solid #331f00;
+  border-radius: 3px;
+  line-height: 1.5;
+  padding: 2px 8px;
+  -webkit-appearance: button;
+  text-decoration: none;
+  color: #331f00;
+  cursor: pointer;
+  min-width: 70px;
+  text-align: center;
+}
+button:hover,
+.button:hover,
+input[type="submit"]:hover {
+  background: #f4f3f0;
+}
+
+.item-list {
+  padding: 0;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.item-list__item {
+  border-top: 1px solid #ccc5ba;
+  display: block;
+  padding: 4px 20px;
+}
+.item-list__item-link {
+  display: flex;
+  text-decoration: none;
+  margin: -4px -20px;
+  padding: 4px 20px;
+}
+.item-list__item-link:hover {
+  background: #f4f3f0;
+}
+.item-list__item-link:visited {
+  color: #331f00;
+}
+
+.item-list__item-field {
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+.item-list__item-field.-fill {
+  flex-shrink: 1;
+  flex-grow: 1;
+}
+
+.note-display {
+  flex: 1;
+}
+
+.button-list > .button {
+  border-right: none;
+  border-radius: 0px;
+}
+.button-list > .button:first-child {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+.button-list > .button:last-child {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+  border-right: 1px solid #331f00;
+}

@@ -4,28 +4,38 @@
     <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title><%= assigns[:page_title] || "Whiteboard · Phoenix Framework" %></title>
+    <title><%= assigns[:page_title] || "Whiteboard" %></title>
     <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>"/>
     <%= csrf_meta_tag() %>
   </head>
   <body>
-    <header>
-      <section class="container">
-        <nav role="navigation">
-          <ul>
-            <li><a href="https://hexdocs.pm/phoenix/overview.html">Get Started</a></li>
-          </ul>
-        </nav>
-        <a href="https://phoenixframework.org/" class="phx-logo">
-          <img src="<%= Routes.static_path(@conn, "/images/phoenix.png") %>" alt="Phoenix Framework Logo"/>
-        </a>
-      </section>
+    <header class="site-header">
+      <div class="site-header__nav">
+        <div class="site-header__title">Whiteboard</div>
+      </div>
+      <div class="site-header__messages">
+        <%= if has_flash(@conn, :info) do %>
+          <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
+        <% end %>
+        <%= if has_flash(@conn, :error) do %>
+          <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
+        <% end %>
+      </div>
+      <div class="site-header__actions">
+        <%= link "Create", to: Routes.board_path(@conn, :new), class: "button" %>
+      </div>
     </header>
     <main role="main" class="container">
-      <p class="alert alert-info" role="alert"><%= get_flash(@conn, :info) %></p>
-      <p class="alert alert-danger" role="alert"><%= get_flash(@conn, :error) %></p>
       <%= render @view_module, @view_template, assigns %>
     </main>
+    <footer class="site-footer">
+      <div class="site-footer__icon">
+        <a href="https://zjm.me">
+          <img src="<%= Routes.static_path(@conn, "/images/rose.png") %>" alt="Logo" width="20" height="20" />
+        </a>
+      </div>
+      <div class="site-footer__copyright">©2020 zjm</div>
+    </footer>
     <script type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
   </body>
 </html>
