@@ -214,76 +214,28 @@ class KeyboardInput {
 class NotepadCanvas {
   /* This handles all the drawing stuff.
    */
-  constructor(canvas, pen) {
+  constructor(canvas) {
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
-    this.pen = pen;
 
     this.drawTo = this.drawTo.bind(this);
-    this.simpleDrawTo = this.simpleDrawTo.bind(this);
-    this.smoothDrawTo = this.smoothDrawTo.bind(this);
     this.drawStroke = this.drawStroke.bind(this);
     this.refresh = this.refresh.bind(this);
     this.clear = this.clear.bind(this);
   }
 
-  drawTo(point) {
-    // This is what we call externally. We can swap out different drawing
-    // methods here.
-    this.smoothDrawTo(point);
-  }
-
-  simpleDrawTo(point) {
-    // This simply draws a line to a new point, and updates the pen position.
-
-    this.context.beginPath();
-    this.pen.prepareContext(this.context, point);
-
-    this.context.moveTo(this.pen.position.x, this.pen.position.y);
-    this.context.lineTo(point.x, point.y);
-
-    this.context.stroke();
-    this.context.closePath();
-
-    this.pen.position = { x: point.x, y: point.y };
-  }
-
-  smoothDrawTo(point) {
-    // Draws a curve to a new point. To keep lines smooth, we actually use the
-    // given points as control points for a Bezier, and draw between the
-    // midpoints of the control points. This means that the stroke won't go
-    // exactly to where the touch/mouse events reported, but the segments should
-    // be small enough not to matter.
-
-    this.context.beginPath();
-    this.pen.prepareContext(this.context, point);
-
-    this.context.moveTo(this.pen.position.x, this.pen.position.y);
-
-    // Get the midpoint between our last saved control point and the new one.
-    // This will be where the curve draws to.
-    let newPoint = {
-      x: 0.5*(point.x + this.pen.control.x),
-      y: 0.5*(point.y + this.pen.control.y)
-    };
-
-    // Draw the curve to the new midpoint, using our last saved control point
-    this.context.quadraticCurveTo(this.pen.control.x, this.pen.control.y, newPoint.x, newPoint.y);
-
-    this.context.stroke();
-    this.context.closePath();
-
-    // Update pen position and control points
-    this.pen.position = { x: newPoint.x, y: newPoint.y };
-    this.pen.control = { x: point.x, y: point.y };
+  drawTo(brush, point) {
+    brush.drawTo(point, this.context);
   }
 
   drawStroke(stroke) {
     // Move to the first point, and call `drawTo` on the rest.
     if (stroke.points.length > 1) {
-      this.pen.matchStroke(stroke);
+      // const brush = new PenBrush();
+      const brush = Brush.getBrush(stroke.brush);
+      brush.setPosition(stroke.points[0]);
       for(let i = 1; i < stroke.points.length; i++) {
-        this.drawTo(stroke.points[i]);
+        this.drawTo(brush, stroke.points[i]);
       }
     }
   }
@@ -301,89 +253,96 @@ class NotepadCanvas {
 
 }
 
-class Pen {
-  /* This mostly holds pen variables for drawing. In the future we could expand
-   * this to vary behavior based on different "brushes", but for now we only
-   * support a "fountain pen" type brush, which varies the stroke width based on
-   * pressure.
-   */
-
-  constructor() {
-    this.position = { x: 0, y: 0 };
-    this.control = { x: 0, y: 0 }; // this is used for "smooth" drawing
-    this.color = 'black';
-    this.drawing = false;
-    this.brushName = "pen";
-    this.brushes = {
-      pen: new PenBrush(this),
-      eraser: new EraserBrush(this)
-    };
-
-    this.setBrush = this.setBrush.bind(this);
-    this.setColor = this.setColor.bind(this);
-    this.prepareContext = this.prepareContext.bind(this);
-    this.matchStroke = this.matchStroke.bind(this);
-  }
-
-  setBrush(brushName) {
-    if (this.brushes[brushName]) {
-      this.brushName = brushName;
+class Brush {
+  static getBrush = brushName => {
+    switch (brushName) {
+      case "pen":
+        return new PenBrush();
+      case "eraser":
+        return new EraserBrush();
+      default:
+        console.warn("Brush not found:", brushName);
     }
-  }
-
-  setColor(color) {
-    this.color = color;
-  }
-
-  prepareContext(context, point) {
-    context.strokeStyle = this.color;
-    this.brushes[this.brushName].applyToContext(context, point);
-  }
-
-  matchStroke(stroke) {
-    this.position = { x: stroke.points[0].x, y: stroke.points[0].y };
-    this.control = { x: stroke.points[0].x, y: stroke.points[0].y };
-    this.color = stroke.color;
-    this.brushName = stroke.brush;
-  }
+  };
 }
 
 class PenBrush {
-  constructor(pen, opts) {
+  constructor(opts) {
     opts = opts || {};
-    this.pen = pen;
+    this.brushName = 'pen';
+    this.position = { x: 0, y: 0 };
+    this.control = { x: 0, y: 0 };
     this.minWidth = opts.minWidth || 0;
     this.maxWidth = opts.maxWidth || 8;
 
-    this.applyToContext = this.applyToContext.bind(this);
     this.getWidth = this.getWidth.bind(this);
+    this.setPosition = this.setPosition.bind(this);
+    this.drawTo = this.drawTo.bind(this);
   }
 
-  applyToContext(context, point) {
-    context.globalCompositeOperation = "source-over";
-    context.lineWidth = this.getWidth(point.force);
+  setPosition(point) {
+    this.position = { x: point.x, y: point.y };
+    this.control = { x: point.x, y: point.y };
   }
 
   getWidth(force) {
-    // Linear interpolation. We could customize this to make the pen feel
-    // different
+    // Linear interpolation
     return this.minWidth + force * (this.maxWidth - this.minWidth);
+
+    // Deceleration interpolation
+    // return this.minWidth + (1 - Math.pow(1 - force, 2)) * (this.maxWidth - this.minWidth);
+  }
+
+  drawTo(point, context) {
+    context.beginPath();
+    context.strokeStyle = 'black';
+    context.globalCompositeOperation = "source-over";
+    context.lineWidth = this.getWidth(point.force);
+
+    context.moveTo(this.position.x, this.position.y);
+
+    // Get the midpoint between our last saved control point and the new one.
+    // This will be where the curve draws to.
+    let newPoint = {
+      x: 0.5*(point.x + this.control.x),
+      y: 0.5*(point.y + this.control.y)
+    };
+
+    // Draw the curve to the new midpoint, using our last saved control point
+    context.quadraticCurveTo(this.control.x, this.control.y, newPoint.x, newPoint.y);
+
+    context.stroke();
+    context.closePath();
+
+    // Update pen position and control points
+    this.position = { x: newPoint.x, y: newPoint.y };
+    this.control = { x: point.x, y: point.y };
   }
 }
 
 class EraserBrush {
-  constructor(pen, opts) {
+  constructor(opts) {
     opts = opts || {};
-    this.pen = pen;
-    this.size = opts.size || 8;
+    this.brushName = "eraser";
+    this.size = opts.size || 30;
 
-    this.applyToContext = this.applyToContext.bind(this);
+    this.setPosition = this.setPosition.bind(this);
+    this.drawTo = this.drawTo.bind(this);
   }
 
-  applyToContext(context, point) {
+  setPosition(point) {
+    this.position = { x: point.x, y: point.y };
+    this.control = { x: point.x, y: point.y };
+  }
+
+  drawTo(point, context) {
+    context.beginPath();
     context.globalCompositeOperation = "destination-out";
-    context.strokeStyle = "rgba(255,255,255,1)";
-    context.lineWidth = this.size;
+    context.fillStyle = "rgba(255,255,255,1)";
+
+    context.arc(point.x, point.y, this.size, 2*Math.PI, false);
+
+    context.fill();
   }
 }
 
@@ -404,14 +363,16 @@ class Notepad {
     this.addStroke = this.addStroke.bind(this);
     this.resize = this.resize.bind(this);
     this.setOption = this.setOption.bind(this);
+    this.setBrush = this.setBrush.bind(this);
 
     this.canvasEl = canvasEl;
-    this.pen = new Pen();
-    this.canvas = new NotepadCanvas(canvasEl, this.pen);
+    this.isDrawing = false;
+    this.brush = new PenBrush();
+    this.canvas = new NotepadCanvas(canvasEl);
     this.strokeHistory = new StrokeHistory(imageData.strokes);
     this.curStroke = {
-      color: this.pen.color,
-      brush: this.pen.brushName,
+      color: 'black',
+      brush: this.brush.brushName,
       points: []
     }; // holds the stroke currently being drawn
 
@@ -444,24 +405,23 @@ class Notepad {
   }
 
   penDown(event) {
-    this.pen.drawing = true;
-    this.pen.position = { x: event.detail.x, y: event.detail.y };
-    this.pen.control = { x: this.pen.x, y: this.pen.y };
-    this.curStroke.color = this.pen.color;
-    this.curStroke.brush = this.pen.brushName;
+    this.isDrawing = true;
+    this.brush.setPosition(event.detail);
+    this.curStroke.brush = this.brush.brushName;
+    this.curStroke.points.push(event.detail);
   }
 
   penUp(event) {
-    if (this.pen.drawing) {
-      this.pen.drawing = false;
+    if (this.isDrawing) {
+      this.isDrawing = false;
       this.broadcast("stroke", { stroke: this.curStroke });
       this.curStroke.points = [];
     }
   }
 
   penMove(event) {
-    if (this.pen.drawing) {
-      this.canvas.drawTo(event.detail);
+    if (this.isDrawing) {
+      this.canvas.drawTo(this.brush, event.detail);
       this.curStroke.points.push(event.detail);
     }
   }
@@ -508,13 +468,26 @@ class Notepad {
   setOption(option, value) {
     switch(option) {
       case "brush":
-        this.pen.setBrush(value);
+        this.setBrush(value);
         break;
       case "color":
         this.pen.setColor(value);
         break;
       default:
         console.warn("Unrecognized notepad option:", option);
+    }
+  }
+
+  setBrush(brushName) {
+    switch (brushName) {
+      case "pen":
+        this.brush = new PenBrush();
+        break;
+      case "eraser":
+        this.brush = new EraserBrush();
+        break;
+      default:
+        console.warn("Unrecognized brush selected:", brushName);
     }
   }
 
