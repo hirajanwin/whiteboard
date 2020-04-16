@@ -1,3 +1,7 @@
 <section class="section --full-width hstack">
-  <canvas data-notepad class="fill"></canvas>
+  <canvas id="board" data-notepad class="fill"></canvas>
 </section>
+
+<script>
+
+</script>

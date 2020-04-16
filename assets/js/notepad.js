@@ -353,6 +353,8 @@ class Notepad {
     new Event("penmove");
     new Event("undo");
     new Event("redo");
+    new Event("notepad:ready");
+    new Event("notepad:stroke");
 
     // Set up the input handlers
     this.mouse = new MouseInput(canvas);
@@ -368,6 +370,7 @@ class Notepad {
 
     // Refresh the canvas in case we had some initial stroke data
     this.canvas.refresh(this.strokeHistory);
+    document.dispatchEvent(new CustomEvent("notepad:ready", { detail: this }));
   }
 
   penDown(event) {
@@ -380,6 +383,9 @@ class Notepad {
     if (this.pen.drawing) {
       this.pen.drawing = false;
       this.strokeHistory.addStroke(this.curStroke);
+      document.dispatchEvent(new CustomEvent("notepad:stroke", {
+        detail: { stroke: this.curStroke }
+      }));
       this.curStroke = [];
     }
   }
@@ -405,6 +411,12 @@ class Notepad {
     return {
       strokes: this.strokeHistory.currentStrokes()
     };
+  }
+
+  addStroke(stroke) {
+    this.strokeHistory.addStroke(stroke);
+    this.canvas.refresh(this.strokeHistory);
+    this.canvas.drawStroke(this.curStroke);
   }
 
 }
