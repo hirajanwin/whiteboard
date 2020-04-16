@@ -279,7 +279,6 @@ class NotepadCanvas {
   }
 
   drawStroke(stroke) {
-    debugger;
     // Move to the first point, and call `drawTo` on the rest.
     if (stroke.points.length > 1) {
       this.pen.matchStroke(stroke);
@@ -361,6 +360,7 @@ class PenBrush {
   }
 
   applyToContext(context, point) {
+    context.globalCompositeOperation = "source-over";
     context.lineWidth = this.getWidth(point.force);
   }
 
