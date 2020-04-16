@@ -1,3 +1,8 @@
 <section class="section --full-width hstack">
   <canvas id="board" data-notepad class="fill"></canvas>
 </section>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    joinBoard("lobby");
+  })
+</script>
