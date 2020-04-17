@@ -45,6 +45,7 @@ class StrokeHistory {
     this.undo = this.undo.bind(this);
     this.redo = this.redo.bind(this);
     this.currentStrokes = this.currentStrokes.bind(this);
+    this.clear = this.clear.bind(this);
   }
 
   addStroke(stroke) {
@@ -70,6 +71,12 @@ class StrokeHistory {
     // returns all the strokes that should be visible
     return this.strokes.slice(0, this.numStrokes);
   }
+
+  clear() {
+    this.strokes = [];
+    this.numStrokes = 0;
+  }
+
 }
 
 class MouseInput {
@@ -355,7 +362,6 @@ class NotepadCanvas {
   constructor(canvas) {
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
-    this.scale = 1;
     this.bounds = {
       left: -10000,
       top: -10000,
@@ -368,12 +374,11 @@ class NotepadCanvas {
     this.prepareStroke = this.prepareStroke.bind(this);
     this.refresh = this.refresh.bind(this);
     this.clear = this.clear.bind(this);
-    this.scalePreview = this.scalePreview.bind(this);
-    this.setScale = this.setScale.bind(this);
     this.scaleBy = this.scaleBy.bind(this);
     this.drawGrid = this.drawGrid.bind(this);
     this.panBy = this.panBy.bind(this);
     this.applyTransform = this.applyTransform.bind(this);
+    this.reset = this.reset.bind(this);
   }
 
   drawTo(brush, point) {
@@ -411,14 +416,6 @@ class NotepadCanvas {
         this.bounds.right - this.bounds.left, this.bounds.bottom - this.bounds.top);
   }
 
-  scalePreview(amount) {
-    this.context.setTransform(this.scale*amount, 0, 0, this.scale*amount, 0, 0);
-  }
-
-  setScale(amount) {
-    this.scale = amount;
-  }
-
   scaleBy(amount) {
     this.context.translate(amount.center.x, amount.center.y);
     this.context.scale(amount.scale, amount.scale);
@@ -446,6 +443,10 @@ class NotepadCanvas {
       x: (point.x - matrix.e)/matrix.a,
       y: (point.y - matrix.f)/matrix.d
     };
+  }
+
+  reset() {
+    this.context.setTransform(1, 0, 0, 1, 0, 0);
   }
 
 }
@@ -562,6 +563,7 @@ class Notepad {
     this.setOption = this.setOption.bind(this);
     this.zoom = this.zoom.bind(this);
     this.pan = this.pan.bind(this);
+    this.reset = this.reset.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
@@ -698,6 +700,12 @@ class Notepad {
 
   pan(event) {
     this.canvas.panBy(event.detail);
+    this.canvas.refresh(this.strokeHistory);
+  }
+
+  reset() {
+    this.strokeHistory.clear();
+    this.canvas.reset();
     this.canvas.refresh(this.strokeHistory);
   }
 

@@ -22,6 +22,9 @@ window.joinBoard = (boardCode) => {
     document.addEventListener("notepad:redo", event => {
       channel.push("notepad-cmd", { type: "redo" });
     });
+    document.addEventListener("notepad:reset", event => {
+      channel.push("notepad-cmd", { type: "reset" });
+    });
 
     channel.on("notepad-cmd", payload => {
       switch(payload.type) {
@@ -33,6 +36,9 @@ window.joinBoard = (boardCode) => {
           break;
         case "redo":
           notepad.redo();
+          break;
+        case "reset":
+          notepad.reset();
           break;
         default:
           console.warn("Recieved unknown notepad command:", payload);
