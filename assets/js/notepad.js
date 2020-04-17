@@ -155,7 +155,7 @@ class MouseInput {
           x: window.devicePixelRatio*event.clientX,
           y: window.devicePixelRatio*event.clientY
         };
-        event.target.dispatchEvent(new CustomEvent("canvasmove", { detail: delta }));
+        event.target.dispatchEvent(new CustomEvent("pan", { detail: delta }));
       }
     };
   }
@@ -251,7 +251,7 @@ class TouchInput {
         x: event.touches[0].clientX,
         y: event.touches[0].clientY
       };
-      event.target.dispatchEvent(new CustomEvent("canvasmove", {detail: delta }));
+      event.target.dispatchEvent(new CustomEvent("pan", {detail: delta }));
     } else if (this.numTouches === 2) {
       this.gesturePosition = {
         x: 0.5*(event.touches[0].clientX + event.touches[1].clientX),
@@ -435,6 +435,7 @@ class NotepadCanvas {
 
   drawGrid() {
     this.context.globalCompositeOperation = "source-over";
+    this.context.fillStyle = 'black';
     for (let x = this.bounds.left; x < this.bounds.right; x += 100) {
       for (let y = this.bounds.top; y < this.bounds.bottom; y += 100) {
         this.context.fillRect(x, y, window.devicePixelRatio*2, window.devicePixelRatio*2);
@@ -585,7 +586,7 @@ class Notepad {
     new Event("undo");
     new Event("redo");
     new Event("zoom");
-    new Event("canvasmove");
+    new Event("pan");
     new Event("notepad:ready");
     new Event("notepad:stroke");
 
@@ -602,7 +603,7 @@ class Notepad {
     canvasEl.addEventListener("undo", () => this.broadcast("undo"));
     canvasEl.addEventListener("redo", () => this.broadcast("redo"));
     canvasEl.addEventListener("zoom", this.zoom);
-    canvasEl.addEventListener("canvasmove", this.pan);
+    canvasEl.addEventListener("pan", this.pan);
 
     // Refresh the canvas in case we had some initial stroke data
     this.resize();
