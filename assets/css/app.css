@@ -127,10 +127,7 @@ input[type="submit"]:hover {
   border: none;
 }
 .toolbox .toolbox__button.--color:checked {
-  /*border: 4px solid #ccc5ba;*/
-  box-shadow:
-    inset 0px 2px 4px rgba(0, 0, 0, 0.5),
-    inset 0px -2px 4px rgba(255, 255, 255, 0.5);
+  border: 4px solid #ccc5ba;
 }
 
 .toolbox .toolbox__button.--size {
