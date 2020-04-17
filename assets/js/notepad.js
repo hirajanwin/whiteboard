@@ -131,6 +131,7 @@ class TouchInput {
   constructor(target) {
     this.numTouches = 0;
     this.drawing = false;
+    this.movePosition = { x: 0, y: 0 };
 
     target.addEventListener("touchstart", this.ontouchstart);
     target.addEventListener("touchend", this.ontouchend);
@@ -157,6 +158,8 @@ class TouchInput {
           y: window.devicePixelRatio*(stylus.clientY - rect.y),
         }
       }));
+    } else if (this.numTouches === 1) {
+      this.movePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
     }
   }
 
@@ -181,6 +184,17 @@ class TouchInput {
           force: stylus.force
         }
       }));
+    } else if (this.numTouches === 1) {
+      const delta = {
+        x: window.devicePixelRatio*(event.touches[0].clientX - this.movePosition.x),
+        y: window.devicePixelRatio*(event.touches[0].clientY - this.movePosition.y)
+      };
+      // console.log(this.movePosition);
+      this.movePosition = {
+        x: event.touches[0].clientX,
+        y: event.touches[0].clientY
+      };
+      event.target.dispatchEvent(new CustomEvent("canvasmove", {detail: delta }));
     }
   }
 
@@ -195,13 +209,13 @@ class TouchInput {
 
   ongesturechange(event) {
     event.preventDefault();
-    event.target.dispatchEvent(new CustomEvent("zoom", { detail: event.scale }));
+    // event.target.dispatchEvent(new CustomEvent("zoom", { detail: event.scale }));
   }
 
   ongestureend(event) {
     event.preventDefault();
     if (event.scale < 0.95 || event.scale > 1.05) {
-      event.target.dispatchEvent(new CustomEvent("zoomend", { detail: event.scale }));
+      // event.target.dispatchEvent(new CustomEvent("zoomend", { detail: event.scale }));
     } else {
       // tap
       if (this.numTouches === 2) {
@@ -243,16 +257,24 @@ class NotepadCanvas {
   constructor(canvas) {
     this.canvas = canvas;
     this.context = canvas.getContext('2d');
-    this.baseScale = 1;
+    this.scale = 1;
+    this.bounds = {
+      left: -10000,
+      top: -10000,
+      right: 10000,
+      bottom: 10000
+    };
 
     this.drawTo = this.drawTo.bind(this);
     this.drawStroke = this.drawStroke.bind(this);
     this.prepareStroke = this.prepareStroke.bind(this);
     this.refresh = this.refresh.bind(this);
     this.clear = this.clear.bind(this);
-    this.relativeScale = this.relativeScale.bind(this);
+    this.scalePreview = this.scalePreview.bind(this);
     this.setScale = this.setScale.bind(this);
     this.drawGrid = this.drawGrid.bind(this);
+    this.panBy = this.panBy.bind(this);
+    this.applyTransform = this.applyTransform.bind(this);
   }
 
   drawTo(brush, point) {
@@ -286,24 +308,37 @@ class NotepadCanvas {
   }
 
   clear() {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.clearRect(this.bounds.left, this.bounds.top,
+        this.bounds.right - this.bounds.left, this.bounds.bottom - this.bounds.top);
   }
 
-  relativeScale(amount) {
-    this.context.setTransform(this.baseScale*amount, 0, 0, this.baseScale*amount, 0, 0);
+  scalePreview(amount) {
+    this.context.setTransform(this.scale*amount, 0, 0, this.scale*amount, 0, 0);
   }
 
   setScale(amount) {
-    console.log("Setting scale to ", amount);
-    this.baseScale = amount;
+    this.scale = amount;
+  }
+
+  panBy(delta) {
+    this.context.translate(delta.x, delta.y);
   }
 
   drawGrid() {
-    for (let x = 0; x < this.canvas.width; x += 100) {
-      for (let y = 0; y < this.canvas.height; y += 100) {
+    for (let x = this.bounds.left; x < this.bounds.right; x += 100) {
+      for (let y = this.bounds.top; y < this.bounds.bottom; y += 100) {
         this.context.fillRect(x, y, window.devicePixelRatio*2, window.devicePixelRatio*2);
       }
     }
+  }
+
+  applyTransform(point) {
+    const matrix = this.context.getTransform();
+    return {
+      ...point,
+      x: point.x - matrix.e,
+      y: point.y - matrix.f
+    };
   }
 
 }
@@ -328,7 +363,7 @@ class PenBrush {
     this.position = { x: 0, y: 0 };
     this.control = { x: 0, y: 0 };
     this.minWidth = opts.minWidth || 0;
-    this.maxWidth = opts.size || 8;
+    this.maxWidth = opts.size || 16;
 
     this.getWidth = this.getWidth.bind(this);
     this.setPosition = this.setPosition.bind(this);
@@ -419,6 +454,7 @@ class Notepad {
     this.setOption = this.setOption.bind(this);
     this.zoom = this.zoom.bind(this);
     this.zoomend = this.zoomend.bind(this);
+    this.pan = this.pan.bind(this);
     this.cmd = this.cmd.bind(this);
 
     this.canvasEl = canvasEl;
@@ -429,7 +465,7 @@ class Notepad {
     this.curStroke = {
       color: 'black',
       brush: 'pen',
-      size: 8,
+      size: 16,
       points: []
     }; // holds the stroke currently being drawn
 
@@ -441,6 +477,7 @@ class Notepad {
     new Event("redo");
     new Event("zoom");
     new Event("zoomend");
+    new Event("canvasmove");
     new Event("notepad:ready");
     new Event("notepad:stroke");
 
@@ -457,6 +494,7 @@ class Notepad {
     canvasEl.addEventListener("redo", () => this.broadcast("redo"));
     canvasEl.addEventListener("zoom", this.zoom);
     canvasEl.addEventListener("zoomend", this.zoomend);
+    canvasEl.addEventListener("canvasmove", this.pan);
 
     // Refresh the canvas in case we had some initial stroke data
     this.resize();
@@ -464,11 +502,12 @@ class Notepad {
   }
 
   penDown(event) {
+    const point = this.canvas.applyTransform(event.detail);
     this.isDrawing = true;
     this.canvas.prepareStroke(this.curStroke);
-    this.curStroke.points.push(event.detail);
+    this.curStroke.points.push(point);
     this.brush = Brush.getBrush(this.curStroke.brush, this.curStroke);
-    this.brush.setPosition(event.detail);
+    this.brush.setPosition(point);
   }
 
   penUp(event) {
@@ -481,8 +520,9 @@ class Notepad {
 
   penMove(event) {
     if (this.isDrawing) {
-      this.canvas.drawTo(this.brush, event.detail);
-      this.curStroke.points.push(event.detail);
+      const point = this.canvas.applyTransform(event.detail);
+      this.canvas.drawTo(this.brush, point);
+      this.curStroke.points.push(point);
     }
   }
 
@@ -542,12 +582,17 @@ class Notepad {
   }
 
   zoom(event) {
-    this.canvas.relativeScale(event.detail);
+    this.canvas.scalePreview(event.detail);
     this.canvas.refresh(this.strokeHistory);
   }
 
   zoomend(event) {
     this.canvas.setScale(event.detail);
+    this.canvas.refresh(this.strokeHistory);
+  }
+
+  pan(event) {
+    this.canvas.panBy(event.detail);
     this.canvas.refresh(this.strokeHistory);
   }
 

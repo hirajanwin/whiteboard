@@ -7,7 +7,7 @@
     <input class="toolbox__button --color" type="radio" name="color" value="#3177EF" data-for-notepad="whiteboard" style="background-color: #3177EF" />
     <input class="toolbox__button --color" type="radio" name="color" value="#EF315E" data-for-notepad="whiteboard" style="background-color: #EF315E" />
     <span class="toolbox__spacer"></span>
-    <input class="toolbox__button --size" type="range" min="1" max="100" data-for-notepad="whiteboard" value="8" name="brushSize" />
+    <input class="toolbox__button --size" type="range" min="1" max="100" data-for-notepad="whiteboard" value="20" name="brushSize" />
     <span class="toolbox__spacer fill"></span>
     <button class="toolbox__button button" data-for-notepad="whiteboard" data-notepad-cmd="zoom-in">+</button>
     <button class="toolbox__button button" data-for-notepad="whiteboard" data-notepad-cmd="zoom-out">-</button>
