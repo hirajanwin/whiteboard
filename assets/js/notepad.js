@@ -77,53 +77,104 @@ class StrokeHistory {
 }
 
 class MouseInput {
-  /* This translates mouse events into our custom notepad events. Since a mouse
-   * doesn't support pressure-sensitivity, we hard-code the value 0.2 for force
-   * (see "onmousemove").
-   *
-   * X and Y coordinates are reported relative to the top-left corner of the
-   * canvas in "pendown" and "penmove" custom events. They're also scaled
-   * according to the devices pixel ratio, to support retina displays.
-   */
+  constructor(target, keyboardInput, cursor) {
+    this.keyboard = keyboardInput;
+    this.cursor = cursor;
+    this.action = null;
+    this.movePosition = { x: 0, y: 0 };
 
-  constructor(target) {
-    target.addEventListener("mousedown", this.onmousedown);
-    target.addEventListener("mouseup", this.onmouseup);
-    target.addEventListener("mousemove", this.onmousemove);
+    // this.onmousedown = this.onmousedown.bind(this);
+    // this.onmouseup = this.onmouseup.bind(this);
+    // this.onmousemove = this.onmousemove.bind(this);
+
+    target.addEventListener("mousedown", this.onmousedown(this));
+    target.addEventListener("mouseup", this.onmouseup(this));
+    target.addEventListener("mousemove", this.onmousemove(this));
     target.addEventListener("mouseout", this.onmouseout);
+    target.addEventListener("wheel", this.onwheel);
   }
 
-  onmousedown(event) {
-    event.preventDefault();
-    let rect = event.target.getBoundingClientRect(); // canvas rectangle
-    event.target.dispatchEvent(new CustomEvent("pendown", {
-      detail: {
-        x: window.devicePixelRatio*(event.clientX - rect.x),
-        y: window.devicePixelRatio*(event.clientY - rect.y),
+  onmousedown(that) {
+    return event => {
+      event.preventDefault();
+      if (that.keyboard.modifiers.shift) {
+        // move
+        that.action = 'move';
+        that.movePosition = {
+          x: window.devicePixelRatio*event.clientX,
+          y: window.devicePixelRatio*event.clientY
+        };
+        that.cursor.setCursor("grabbing");
+      } else {
+        // draw
+        that.action = 'draw';
+        const rect = event.target.getBoundingClientRect(); // canvas rectangle
+        event.target.dispatchEvent(new CustomEvent("pendown", {
+          detail: {
+            x: window.devicePixelRatio*(event.clientX - rect.x),
+            y: window.devicePixelRatio*(event.clientY - rect.y),
+          }
+        }));
       }
-    }));
+    };
   }
 
-  onmouseup(event) {
-    event.preventDefault();
-    event.target.dispatchEvent(new CustomEvent("penup"));
-  }
+  onmouseup(that) {
+    return event => {
+      event.preventDefault();
 
-  onmousemove(event) {
-    event.preventDefault();
-    let rect = event.target.getBoundingClientRect();
-    event.target.dispatchEvent(new CustomEvent("penmove", {
-      detail: {
-        x: window.devicePixelRatio*(event.clientX - rect.x),
-        y: window.devicePixelRatio*(event.clientY - rect.y),
-        force: 0.2
+      that.action = null;
+      if (that.keyboard.modifiers.shift) {
+        that.cursor.setCursor("grab");
+      } else {
+        that.cursor.setCursor("");
       }
-    }));
+
+      event.target.dispatchEvent(new CustomEvent("penup"));
+    };
+  }
+
+  onmousemove(that) {
+    return event => {
+      event.preventDefault();
+      if (that.action === 'draw') {
+        const rect = event.target.getBoundingClientRect();
+        event.target.dispatchEvent(new CustomEvent("penmove", {
+          detail: {
+            x: window.devicePixelRatio*(event.clientX - rect.x),
+            y: window.devicePixelRatio*(event.clientY - rect.y),
+            force: 0.2
+          }
+        }));
+      } else if (that.action === 'move') {
+        const delta = {
+          x: window.devicePixelRatio*(event.clientX - that.movePosition.x),
+          y: window.devicePixelRatio*(event.clientY - that.movePosition.y)
+        }
+        that.movePosition = {
+          x: window.devicePixelRatio*event.clientX,
+          y: window.devicePixelRatio*event.clientY
+        };
+        event.target.dispatchEvent(new CustomEvent("canvasmove", { detail: delta }));
+      }
+    };
   }
 
   onmouseout(event) {
     event.preventDefault();
     event.target.dispatchEvent(new CustomEvent("penup"));
+  }
+
+  onwheel(event) {
+    event.preventDefault();
+    let rect = event.target.getBoundingClientRect();
+    event.target.dispatchEvent(new CustomEvent("zoom", { detail: {
+      scale: 1 - (event.deltaY / 500),
+      center: {
+        x: window.devicePixelRatio*(event.clientX - rect.x),
+        y: window.devicePixelRatio*(event.clientY - rect.y)
+      }
+    }}))
   }
 }
 
@@ -131,7 +182,8 @@ class TouchInput {
   constructor(target) {
     this.numTouches = 0;
     this.drawing = false;
-    this.movePosition = { x: 0, y: 0 };
+    this.gesturePosition = { x: 0, y: 0 };
+    this.scale = 1;
 
     target.addEventListener("touchstart", this.ontouchstart);
     target.addEventListener("touchend", this.ontouchend);
@@ -159,7 +211,13 @@ class TouchInput {
         }
       }));
     } else if (this.numTouches === 1) {
-      this.movePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      this.gesturePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    } else if (this.numTouches === 2) {
+      this.gesturePosition = {
+        x: 0.5*(event.touches[0].clientX + event.touches[1].clientX),
+        y: 0.5*(event.touches[0].clientY + event.touches[1].clientY)
+      };
+      this.scale = 1;
     }
   }
 
@@ -186,15 +244,19 @@ class TouchInput {
       }));
     } else if (this.numTouches === 1) {
       const delta = {
-        x: window.devicePixelRatio*(event.touches[0].clientX - this.movePosition.x),
-        y: window.devicePixelRatio*(event.touches[0].clientY - this.movePosition.y)
+        x: window.devicePixelRatio*(event.touches[0].clientX - this.gesturePosition.x),
+        y: window.devicePixelRatio*(event.touches[0].clientY - this.gesturePosition.y)
       };
-      // console.log(this.movePosition);
-      this.movePosition = {
+      this.gesturePosition = {
         x: event.touches[0].clientX,
         y: event.touches[0].clientY
       };
       event.target.dispatchEvent(new CustomEvent("canvasmove", {detail: delta }));
+    } else if (this.numTouches === 2) {
+      this.gesturePosition = {
+        x: 0.5*(event.touches[0].clientX + event.touches[1].clientX),
+        y: 0.5*(event.touches[0].clientY + event.touches[1].clientY)
+      };
     }
   }
 
@@ -209,7 +271,15 @@ class TouchInput {
 
   ongesturechange(event) {
     event.preventDefault();
-    // event.target.dispatchEvent(new CustomEvent("zoom", { detail: event.scale }));
+    const scaleDelta = event.scale / this.scale;
+    this.scale = event.scale;
+    event.target.dispatchEvent(new CustomEvent("zoom", { detail: {
+      scale: scaleDelta,
+      center: {
+        x: window.devicePixelRatio * this.gesturePosition.x,
+        y: window.devicePixelRatio * this.gesturePosition.y
+      }
+    }}));
   }
 
   ongestureend(event) {
@@ -229,25 +299,57 @@ class TouchInput {
 }
 
 class KeyboardInput {
-  /* This translates keyboard events into our custom notepad events. We use it
-   * for undo/redo with cmd+z and cmd+shift+z
-   */
+  constructor(target, cursor) {
+    this.modifiers = {
+      shift: false,
+      alt: false,
+      meta: false,
+      control: false
+    };
+    this.cursor = cursor;
 
-  constructor(target) {
-    // We attach the event listener to the window, since you can't capture
-    // keyboard events on a canvas. To keep a reference to the canvas, we'll
-    // save it in a closure
+    this.onkeydown = this.onkeydown.bind(this);
+    this.onkeyup = this.onkeyup.bind(this);
+
     window.addEventListener("keydown", this.onkeydown(target));
+    window.addEventListener("keyup", this.onkeyup(target));
   }
 
   onkeydown(target) {
+    const that = this;
     return (event) => {
+      if (event.shiftKey && !that.modifiers.shift) {
+        that.modifiers.shift = true;
+        that.cursor.setCursor("grab");
+      }
       if (event.metaKey && !event.shiftKey && event.key === 'z') {
         target.dispatchEvent(new CustomEvent("undo"));
       } else if (event.metaKey && event.shiftKey && event.key === 'z') {
         target.dispatchEvent(new CustomEvent("redo"));
       }
     }
+  }
+
+  onkeyup(target) {
+    const that = this;
+    return (event) => {
+      if (!event.shiftKey && that.modifiers.shift) {
+        that.modifiers.shift = false;
+        that.cursor.setCursor("");
+      }
+    };
+  }
+
+}
+
+class Cursor {
+  constructor(element) {
+    this.element = element;
+    this.setCursor = this.setCursor.bind(this);
+  }
+
+  setCursor(cursor) {
+    this.element.style.cursor = cursor;
   }
 }
 
@@ -272,6 +374,7 @@ class NotepadCanvas {
     this.clear = this.clear.bind(this);
     this.scalePreview = this.scalePreview.bind(this);
     this.setScale = this.setScale.bind(this);
+    this.scaleBy = this.scaleBy.bind(this);
     this.drawGrid = this.drawGrid.bind(this);
     this.panBy = this.panBy.bind(this);
     this.applyTransform = this.applyTransform.bind(this);
@@ -320,11 +423,18 @@ class NotepadCanvas {
     this.scale = amount;
   }
 
+  scaleBy(amount) {
+    this.context.translate(amount.center.x, amount.center.y);
+    this.context.scale(amount.scale, amount.scale);
+    this.context.translate(-amount.center.x, -amount.center.y);
+  }
+
   panBy(delta) {
     this.context.translate(delta.x, delta.y);
   }
 
   drawGrid() {
+    this.context.globalCompositeOperation = "source-over";
     for (let x = this.bounds.left; x < this.bounds.right; x += 100) {
       for (let y = this.bounds.top; y < this.bounds.bottom; y += 100) {
         this.context.fillRect(x, y, window.devicePixelRatio*2, window.devicePixelRatio*2);
@@ -336,8 +446,8 @@ class NotepadCanvas {
     const matrix = this.context.getTransform();
     return {
       ...point,
-      x: point.x - matrix.e,
-      y: point.y - matrix.f
+      x: (point.x - matrix.e)/matrix.a,
+      y: (point.y - matrix.f)/matrix.d
     };
   }
 
@@ -377,10 +487,10 @@ class PenBrush {
 
   getWidth(force) {
     // Linear interpolation
-    return this.minWidth + force * (this.maxWidth - this.minWidth);
+    // return this.minWidth + force * (this.maxWidth - this.minWidth);
 
     // Deceleration interpolation
-    // return this.minWidth + (1 - Math.pow(1 - force, 2)) * (this.maxWidth - this.minWidth);
+    return this.minWidth + (1 - Math.pow(1 - force, 2)) * (this.maxWidth - this.minWidth);
   }
 
   drawTo(point, context) {
@@ -453,19 +563,18 @@ class Notepad {
     this.resize = this.resize.bind(this);
     this.setOption = this.setOption.bind(this);
     this.zoom = this.zoom.bind(this);
-    this.zoomend = this.zoomend.bind(this);
     this.pan = this.pan.bind(this);
-    this.cmd = this.cmd.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
     this.brush = null;
     this.canvas = new NotepadCanvas(canvasEl);
+    this.canvasEl = canvasEl;
     this.strokeHistory = new StrokeHistory(imageData.strokes);
     this.curStroke = {
       color: 'black',
       brush: 'pen',
-      size: 16,
+      size: 8,
       points: []
     }; // holds the stroke currently being drawn
 
@@ -476,15 +585,15 @@ class Notepad {
     new Event("undo");
     new Event("redo");
     new Event("zoom");
-    new Event("zoomend");
     new Event("canvasmove");
     new Event("notepad:ready");
     new Event("notepad:stroke");
 
     // Set up the input handlers
-    this.mouse = new MouseInput(canvasEl);
-    this.touch = new TouchInput(canvasEl);
-    this.keyboard = new KeyboardInput(canvasEl);
+    const cursor = new Cursor(canvasEl);
+    const keyboard = new KeyboardInput(canvasEl, cursor);
+    const mouse = new MouseInput(canvasEl, keyboard, cursor);
+    const touch = new TouchInput(canvasEl);
 
     // Bind our methods to our custom events
     canvasEl.addEventListener("pendown", this.penDown);
@@ -493,7 +602,6 @@ class Notepad {
     canvasEl.addEventListener("undo", () => this.broadcast("undo"));
     canvasEl.addEventListener("redo", () => this.broadcast("redo"));
     canvasEl.addEventListener("zoom", this.zoom);
-    canvasEl.addEventListener("zoomend", this.zoomend);
     canvasEl.addEventListener("canvasmove", this.pan);
 
     // Refresh the canvas in case we had some initial stroke data
@@ -582,33 +690,17 @@ class Notepad {
   }
 
   zoom(event) {
-    this.canvas.scalePreview(event.detail);
-    this.canvas.refresh(this.strokeHistory);
-  }
-
-  zoomend(event) {
-    this.canvas.setScale(event.detail);
+    const scaleAmount = {
+      ...event.detail,
+      center: this.canvas.applyTransform(event.detail.center)
+    };
+    this.canvas.scaleBy(scaleAmount);
     this.canvas.refresh(this.strokeHistory);
   }
 
   pan(event) {
     this.canvas.panBy(event.detail);
     this.canvas.refresh(this.strokeHistory);
-  }
-
-  cmd(command) {
-    switch(command) {
-      case "zoom-in":
-        this.canvas.scale(1.2);
-        this.canvas.refresh(this.strokeHistory);
-        break;
-      case "zoom-out":
-        this.canvas.scale(0.8);
-        this.canvas.refresh(this.strokeHistory);
-        break;
-      default:
-        console.warn("Unrecognized notepad command:", command);
-    }
   }
 
 }
