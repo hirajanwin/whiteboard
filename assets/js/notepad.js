@@ -17,15 +17,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const notepadName = $target.dataset.notepad;
     let $toolTargets = Array.from(document.querySelectorAll(`input[data-for-notepad=${notepadName}]`));
     $toolTargets.map($tool => {
+      if ($tool.type !== "radio" || $tool.checked) {
+        notepad.setOption($tool.name, $tool.value);
+      }
       $tool.addEventListener("change", event => {
         notepad.setOption(event.target.name, event.target.value);
-      });
-    });
-    $toolTargets = Array.from(document.querySelectorAll(`button[data-for-notepad=${notepadName}]`));
-    $toolTargets.map($tool => {
-      $tool.addEventListener("click", event => {
-        const command = event.target.dataset.notepadCmd;
-        notepad.cmd(command);
       });
     });
   });
@@ -495,9 +491,10 @@ class PenBrush {
   }
 
   drawTo(point, context) {
-    context.beginPath();
     context.globalCompositeOperation = "source-over";
     context.lineWidth = this.getWidth(point.force);
+
+    context.beginPath();
 
     context.moveTo(this.position.x, this.position.y);
 

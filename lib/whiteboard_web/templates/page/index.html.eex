@@ -14,5 +14,5 @@
 <script>
   document.addEventListener("DOMContentLoaded", () => {
     joinBoard("lobby");
-  })
+  });
 </script>
