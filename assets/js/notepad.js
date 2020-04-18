@@ -378,6 +378,7 @@ class NotepadCanvas {
     this.drawGrid = this.drawGrid.bind(this);
     this.panBy = this.panBy.bind(this);
     this.applyTransform = this.applyTransform.bind(this);
+    this.applyScale = this.applyScale.bind(this);
     this.reset = this.reset.bind(this);
   }
 
@@ -453,6 +454,15 @@ class NotepadCanvas {
       ...point,
       x: (point.x - matrix.e)/matrix.a,
       y: (point.y - matrix.f)/matrix.d
+    };
+  }
+
+  applyScale(point) {
+    const matrix = this.context.getTransform();
+    return {
+      ...point,
+      x: point.x/matrix.a,
+      y: point.y/matrix.d
     };
   }
 
@@ -710,7 +720,8 @@ class Notepad {
   }
 
   pan(event) {
-    this.canvas.panBy(event.detail);
+    const amount = this.canvas.applyScale(event.detail);
+    this.canvas.panBy(amount);
     this.canvas.refresh(this.strokeHistory);
   }
 
