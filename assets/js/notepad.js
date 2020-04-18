@@ -104,8 +104,8 @@ class MouseInput {
         // move
         that.action = 'move';
         that.movePosition = {
-          x: window.devicePixelRatio*event.clientX,
-          y: window.devicePixelRatio*event.clientY
+          x: event.clientX,
+          y: event.clientY
         };
         that.cursor.setCursor("grabbing");
       } else {
@@ -151,12 +151,12 @@ class MouseInput {
         }));
       } else if (that.action === 'move') {
         const delta = {
-          x: window.devicePixelRatio*(event.clientX - that.movePosition.x),
-          y: window.devicePixelRatio*(event.clientY - that.movePosition.y)
+          x: (event.clientX - that.movePosition.x)*window.devicePixelRatio,
+          y: (event.clientY - that.movePosition.y)*window.devicePixelRatio
         }
         that.movePosition = {
-          x: window.devicePixelRatio*event.clientX,
-          y: window.devicePixelRatio*event.clientY
+          x: event.clientX,
+          y: event.clientY
         };
         event.target.dispatchEvent(new CustomEvent("pan", { detail: delta }));
       }
@@ -429,9 +429,21 @@ class NotepadCanvas {
   drawGrid() {
     this.context.globalCompositeOperation = "source-over";
     this.context.fillStyle = 'black';
-    for (let x = this.bounds.left; x < this.bounds.right; x += 100) {
-      for (let y = this.bounds.top; y < this.bounds.bottom; y += 100) {
-        this.context.fillRect(x, y, window.devicePixelRatio*2, window.devicePixelRatio*2);
+    const rect = this.canvas.getBoundingClientRect();
+    const topLeft = this.applyTransform({ x: 0, y: 0});
+    const bottomRight = this.applyTransform({
+      x: window.devicePixelRatio*rect.width,
+      y: window.devicePixelRatio*rect.height
+    });
+    const offset = {
+      x: -topLeft.x % 100,
+      y: -topLeft.y % 100
+    };
+    console.log(topLeft);
+
+    for (let x = topLeft.x; x < bottomRight.x + 100; x += 100) {
+      for (let y = topLeft.y; y < bottomRight.y + 100; y += 100) {
+        this.context.fillRect(x + offset.x, y + offset.y, window.devicePixelRatio*2, window.devicePixelRatio*2);
       }
     }
   }
