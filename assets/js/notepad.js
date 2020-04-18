@@ -439,7 +439,6 @@ class NotepadCanvas {
       x: -topLeft.x % 100,
       y: -topLeft.y % 100
     };
-    console.log(topLeft);
 
     for (let x = topLeft.x; x < bottomRight.x + 100; x += 100) {
       for (let y = topLeft.y; y < bottomRight.y + 100; y += 100) {
