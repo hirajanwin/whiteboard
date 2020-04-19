@@ -16,7 +16,7 @@ defmodule WhiteboardWeb.BoardController do
 
   def show(conn, %{"code" => code}) do
     board = Boards.get_board_by_code!(code)
-    render(conn, "show.html", board: board)
+    render(conn, "show.html", board: board, title: board.code)
   end
 
 end

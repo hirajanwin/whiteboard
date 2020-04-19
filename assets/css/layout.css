@@ -26,6 +26,7 @@ body {
 .site-header__nav {
   display: flex;
   flex: 1;
+  align-items: center;
 }
 
 .site-header__title {
@@ -35,6 +36,13 @@ body {
 .site-header__title > a {
   text-decoration: none;
   color: #331f00;
+}
+
+.site-header__page-title {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #665c4b;
 }
 
 .site-header__messages {

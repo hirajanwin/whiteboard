@@ -12,6 +12,7 @@
     <header class="site-header">
       <div class="site-header__nav">
         <div class="site-header__title"><%= link "Whiteboard", to: "/" %></div>
+        <div class="site-header__page-title"><%= if Map.has_key?(assigns, :title), do: assigns.title, else: "" %></div>
       </div>
       <div class="site-header__messages">
         <%= if has_flash(@conn, :info) do %>
