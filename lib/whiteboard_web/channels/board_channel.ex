@@ -29,7 +29,7 @@ defmodule WhiteboardWeb.BoardChannel do
       "undo" ->
         Boards.undo_stroke(board_code)
       "redo" ->
-        Boards.redo_stroke(board_code)
+        Boards.add_stroke(board_code, payload["stroke"])
       "reset" ->
         Boards.reset_board(board_code)
     end

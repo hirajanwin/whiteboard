@@ -127,21 +127,33 @@ defmodule Whiteboard.Boards do
   end
 
   def undo_stroke(board_code) do
-
+    stroke = get_last_stroke(board_code)
+    if stroke do
+      Repo.delete stroke
+    end
   end
 
-  def redo_stroke(board_code) do
-
+  def get_last_stroke(board_code) do
+    from(s in Stroke,
+      join: b in Board, on: s.board_id == b.id,
+      where: b.code == ^board_code,
+      order_by: [desc: s.order])
+    |> Repo.all
+    |> List.first
   end
 
   def reset_board(board_code) do
-
+    from(s in Stroke,
+      join: b in Board, on: s.board_id == b.id,
+      where: b.code == ^board_code)
+    |> Repo.delete_all
   end
 
   def get_board_strokes(board_code) do
     from(s in Stroke,
       join: b in Board, on: s.board_id == b.id,
       where: b.code == ^board_code,
+      order_by: s.order,
       select: s.stroke)
     |> Repo.all
   end

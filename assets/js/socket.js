@@ -20,7 +20,7 @@ window.joinBoard = (boardCode) => {
       channel.push("notepad-cmd", { type: "undo" });
     });
     document.addEventListener("notepad:redo", event => {
-      channel.push("notepad-cmd", { type: "redo" });
+      channel.push("notepad-cmd", { type: "redo", stroke: event.detail.stroke });
     });
     document.addEventListener("notepad:reset", event => {
       channel.push("notepad-cmd", { type: "reset" });

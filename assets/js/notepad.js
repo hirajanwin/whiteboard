@@ -45,6 +45,7 @@ class StrokeHistory {
     this.undo = this.undo.bind(this);
     this.redo = this.redo.bind(this);
     this.currentStrokes = this.currentStrokes.bind(this);
+    this.nextStroke = this.nextStroke.bind(this);
     this.clear = this.clear.bind(this);
   }
 
@@ -70,6 +71,14 @@ class StrokeHistory {
   currentStrokes() {
     // returns all the strokes that should be visible
     return this.strokes.slice(0, this.numStrokes);
+  }
+
+  nextStroke() {
+    if (this.numStrokes < this.strokes.length) {
+      return this.strokes[this.numStrokes];
+    } else {
+      return null;
+    }
   }
 
   clear() {
@@ -586,6 +595,7 @@ class Notepad {
     this.pan = this.pan.bind(this);
     this.reset = this.reset.bind(this);
     this.setStrokes = this.setStrokes.bind(this);
+    this.onredo = this.onredo.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
@@ -622,7 +632,7 @@ class Notepad {
     canvasEl.addEventListener("penup", this.penUp);
     canvasEl.addEventListener("penmove", this.penMove);
     canvasEl.addEventListener("undo", () => this.broadcast("undo"));
-    canvasEl.addEventListener("redo", () => this.broadcast("redo"));
+    canvasEl.addEventListener("redo", this.onredo);
     canvasEl.addEventListener("zoom", this.zoom);
     canvasEl.addEventListener("pan", this.pan);
 
@@ -664,6 +674,13 @@ class Notepad {
   redo() {
     this.strokeHistory.redo();
     this.canvas.refresh(this.strokeHistory);
+  }
+
+  onredo() {
+    const stroke = this.strokeHistory.nextStroke();
+    if (stroke !== null) {
+      this.broadcast("redo", { stroke });
+    }
   }
 
   getImageData() {
