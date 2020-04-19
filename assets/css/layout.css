@@ -32,6 +32,10 @@ body {
   font-weight: 600;
   margin-right: 20px;
 }
+.site-header__title > a {
+  text-decoration: none;
+  color: #331f00;
+}
 
 .site-header__messages {
   flex: 1;
@@ -103,6 +107,10 @@ main > section {
   margin-right: 10px;
   position: relative;
   top: 2px;
+}
+
+.site-footer .site-footer__nav {
+  margin-left: auto;
 }
 
 .vstack {

@@ -1,6 +1,3 @@
 # Whiteboard
 
-## Todo:
-
-- Pseudo-private boards
-- Persist boards
+TODO: add content

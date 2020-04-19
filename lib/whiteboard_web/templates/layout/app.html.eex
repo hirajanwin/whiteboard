@@ -11,7 +11,7 @@
   <body>
     <header class="site-header">
       <div class="site-header__nav">
-        <div class="site-header__title">Whiteboard</div>
+        <div class="site-header__title"><%= link "Whiteboard", to: "/" %></div>
       </div>
       <div class="site-header__messages">
         <%= if has_flash(@conn, :info) do %>
@@ -35,6 +35,9 @@
         </a>
       </div>
       <div class="site-footer__copyright">©2020 zjm</div>
+        <div class="site-footer__nav">
+          <a href="/about" class="plain-link">About</a>
+        </div>
     </footer>
     <script type="text/javascript" src="<%= Routes.static_path(@conn, "/js/app.js") %>"></script>
   </body>

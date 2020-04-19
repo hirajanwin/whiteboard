@@ -17,6 +17,7 @@ defmodule WhiteboardWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :index
+    get "/about", PageController, :about
 
     get "/boards/new", BoardController, :new
     get "/boards/:code", BoardController, :show

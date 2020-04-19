@@ -35,6 +35,9 @@ button:hover,
 input[type="submit"]:hover {
   background: #f4f3f0;
 }
+.button:visited {
+  color: #331f00;
+}
 
 .item-list {
   padding: 0;

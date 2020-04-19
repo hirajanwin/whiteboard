@@ -1,0 +1,15 @@
+<section class="section">
+  <h1>About</h1>
+  <p>This is a virtual whiteboard, where participants can draw together, in real time. It currently supports most desktop browsers with mouse/keyboard, and iPads with Apple Pencil (a stylus is required for touch devices).</p>
+  <p>If you find this site useful, please <a href="https://buymeacoff.ee/protestContest">donate!</a></p>
+  <h2>Desktop Controls</h2>
+  <p>Draw by clicking and dragging on the board. <code>cmd+z</code> sends an undo, <code>cmd+shift+z</code> sends a redo. Each stroke and undo/redo command is sent to everyone viewing the board.</p>
+  <p>Zoom in and out with the mouse wheel, and pan with <code>shift+click</code> and drag. Zooming and panning are local only.</p>
+
+  <h2>Touch Controls</h2>
+  <p>Draw with a stylus (only tested with Apple Pencil). Two-finger tap is undo, three-finger tap is redo. Each stroke and undo/redo command is sent to everyone viewing the board.</p>
+  <p>Zoom in and out by pinching, and pan with one finger. Zooming and panning are local only.</p>
+
+  <h2>Private Boards</h2>
+  <p>To create a semi-private board, click the "Create" button and share the link. Anyone with the link can see and interact with the board. Private boards will save anything drawn on them.</p>
+</section>

@@ -438,7 +438,7 @@ class NotepadCanvas {
 
   drawGrid() {
     this.context.globalCompositeOperation = "source-over";
-    this.context.fillStyle = 'black';
+    this.context.fillStyle = '#665c4b';
     const rect = this.canvas.getBoundingClientRect();
     const topLeft = this.applyTransform({ x: 0, y: 0});
     const bottomRight = this.applyTransform({
