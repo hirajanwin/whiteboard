@@ -9,7 +9,7 @@ defmodule WhiteboardWeb.BoardController do
 
     with {:ok, board} <- Boards.create_board(%{"code" => Boards.create_code()}) do
       conn
-      |> put_flash(:info, "Board created.")
+      |> put_flash(:info, "Board created")
       |> redirect(to: Routes.board_path(conn, :show, board.code))
     end
   end

@@ -585,6 +585,7 @@ class Notepad {
     this.zoom = this.zoom.bind(this);
     this.pan = this.pan.bind(this);
     this.reset = this.reset.bind(this);
+    this.setStrokes = this.setStrokes.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
@@ -728,6 +729,12 @@ class Notepad {
   reset() {
     this.strokeHistory.clear();
     this.canvas.reset();
+    this.canvas.refresh(this.strokeHistory);
+  }
+
+  setStrokes(strokes) {
+    delete this.strokeHistory;
+    this.strokeHistory = new StrokeHistory(strokes);
     this.canvas.refresh(this.strokeHistory);
   }
 

@@ -8,6 +8,7 @@ defmodule Whiteboard.Boards do
   alias Whiteboard.Repo
 
   alias Whiteboard.Boards.Board
+  alias Whiteboard.Boards.Stroke
 
   @doc """
   Returns the list of boards.
@@ -115,4 +116,34 @@ defmodule Whiteboard.Boards do
     |> String.slice(0, 8)
     |> String.upcase()
   end
+
+  def add_stroke(board_code, stroke_data) do
+    board = get_board_by_code!(board_code)
+    stroke = %Stroke{
+      stroke: stroke_data,
+      board_id: board.id
+    }
+    Repo.insert!(stroke)
+  end
+
+  def undo_stroke(board_code) do
+
+  end
+
+  def redo_stroke(board_code) do
+
+  end
+
+  def reset_board(board_code) do
+
+  end
+
+  def get_board_strokes(board_code) do
+    from(s in Stroke,
+      join: b in Board, on: s.board_id == b.id,
+      where: b.code == ^board_code,
+      select: s.stroke)
+    |> Repo.all
+  end
+
 end
