@@ -4,6 +4,7 @@ defmodule Whiteboard.Boards do
   """
 
   import Ecto.Query, warn: false
+  alias Ecto
   alias Whiteboard.Repo
 
   alias Whiteboard.Boards.Board
@@ -36,6 +37,11 @@ defmodule Whiteboard.Boards do
 
   """
   def get_board!(id), do: Repo.get!(Board, id)
+
+  def get_board_by_code!(code) do
+    from(b in Board, where: b.code == ^code)
+    |> Repo.one!
+  end
 
   @doc """
   Creates a board.
@@ -100,5 +106,13 @@ defmodule Whiteboard.Boards do
   """
   def change_board(%Board{} = board) do
     Board.changeset(board, %{})
+  end
+
+  def create_code() do
+    uuid = Ecto.UUID.generate()
+    :crypto.hash(:md5 , uuid)
+    |> Base.encode32()
+    |> String.slice(0, 8)
+    |> String.upcase()
   end
 end

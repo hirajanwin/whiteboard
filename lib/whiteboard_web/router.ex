@@ -18,11 +18,8 @@ defmodule WhiteboardWeb.Router do
 
     get "/", PageController, :index
 
-    resources "/boards", BoardController
+    get "/boards/new", BoardController, :new
+    get "/boards/:code", BoardController, :show
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", WhiteboardWeb do
-  #   pipe_through :api
-  # end
 end

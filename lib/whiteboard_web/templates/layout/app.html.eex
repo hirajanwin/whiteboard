@@ -22,7 +22,7 @@
         <% end %>
       </div>
       <div class="site-header__actions">
-        <%# <%= link "Create", to: Routes.board_path(@conn, :new), class: "button" %>
+        <%= link "Create", to: Routes.board_path(@conn, :new), class: "button" %>
       </div>
     </header>
     <main role="main" class="container">

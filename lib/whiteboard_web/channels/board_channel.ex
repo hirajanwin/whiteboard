@@ -1,7 +1,7 @@
 defmodule WhiteboardWeb.BoardChannel do
   use WhiteboardWeb, :channel
 
-  def join("board:lobby", payload, socket) do
+  def join("board:" <> _code, payload, socket) do
     {:ok, socket}
   end
 

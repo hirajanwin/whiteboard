@@ -1,15 +1,20 @@
-<section class="section --full-width hstack">
-  <canvas data-notepad class="fill"></canvas>
+<section class="section --full-width vstack">
+  <div class="toolbox hstack">
+    <input class="toolbox__button --brush" type="radio" name="brush" value="pen" data-for-notepad="whiteboard" style="background-image: url('/images/pen.svg')" checked />
+    <input class="toolbox__button --brush" type="radio" name="brush" value="eraser" data-for-notepad="whiteboard" style="background-image: url('/images/eraser.svg')" />
+    <span class="toolbox__spacer"></span>
+    <input class="toolbox__button --color" type="radio" name="color" value="black" data-for-notepad="whiteboard" style="background-color: black" checked />
+    <input class="toolbox__button --color" type="radio" name="color" value="#3177EF" data-for-notepad="whiteboard" style="background-color: #3177EF" />
+    <input class="toolbox__button --color" type="radio" name="color" value="#EF315E" data-for-notepad="whiteboard" style="background-color: #EF315E" />
+    <span class="toolbox__spacer"></span>
+    <input class="toolbox__button --size" type="range" min="1" max="100" data-for-notepad="whiteboard" value="8" name="brushSize" />
+    <span class="toolbox__spacer fill"></span>
+    <button class="toolbox__button button" onclick="if (confirm('Reset everyone\'s whiteboard?')) document.dispatchEvent(new CustomEvent('notepad:reset'))">Reset</button>
+  </div>
+  <canvas id="board" data-notepad="whiteboard" class="notepad fill"></canvas>
 </section>
-
 <script>
-  socket.connect()
-
-  // Now that you are connected, you can join channels with a topic:
-  let channel = socket.channel("board:<%= @board.code %>", {})
-  channel.join()
-    .receive("ok", resp => { console.log("Joined successfully", resp) })
-    .receive("error", resp => { console.log("Unable to join", resp) })
-
-  export default socket
+  document.addEventListener("DOMContentLoaded", () => {
+    joinBoard("<%= @board.code %>");
+  });
 </script>
