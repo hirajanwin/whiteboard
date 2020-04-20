@@ -4,7 +4,7 @@
     <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title><%= assigns[:page_title] || "Whiteboard" %></title>
+    <title><%= page_title(@conn) %></title>
     <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>"/>
     <link rel="icon" href="/images/board.png" />
     <%= csrf_meta_tag() %>
@@ -13,7 +13,7 @@
     <header class="site-header">
       <div class="site-header__nav">
         <div class="site-header__title"><%= link "Whiteboard", to: "/" %></div>
-        <div class="site-header__page-title"><%= if Map.has_key?(assigns, :title), do: assigns.title, else: "" %></div>
+        <div class="site-header__page-title"><%= assigns[:page_title] || "" %></div>
       </div>
       <div class="site-header__messages">
         <%= if has_flash(@conn, :info) do %>
