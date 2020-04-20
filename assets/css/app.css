@@ -93,12 +93,12 @@ input[type="submit"]:hover {
   border-bottom: 1px solid #ccc5ba;
   padding: 0 20px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
 }
 
 .toolbox .toolbox__spacer {
   display: block;
-  height: 100%;
   width: 34px;
 }
 
@@ -161,11 +161,14 @@ input[type="submit"]:hover {
   text-transform: uppercase;
   border: none;
   color: #665c4b;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .toolbox .toolbox__icon {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   padding: 0;
 }
 

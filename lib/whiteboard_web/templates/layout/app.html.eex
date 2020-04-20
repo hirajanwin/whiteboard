@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title><%= assigns[:page_title] || "Whiteboard" %></title>
     <link rel="stylesheet" href="<%= Routes.static_path(@conn, "/css/app.css") %>"/>
+    <link rel="icon" href="/images/board.png" />
     <%= csrf_meta_tag() %>
   </head>
   <body>
@@ -35,7 +36,7 @@
           <img src="<%= Routes.static_path(@conn, "/images/rose.png") %>" alt="Logo" width="20" height="20" />
         </a>
       </div>
-      <div class="site-footer__copyright">©2020 zjm</div>
+      <div class="site-footer__copyright">©&nbsp;2020&nbsp;zjm</div>
         <div class="site-footer__nav">
           <a href="/about" class="plain-link">About</a>
         </div>
