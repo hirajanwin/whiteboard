@@ -596,6 +596,7 @@ class Notepad {
     this.reset = this.reset.bind(this);
     this.setStrokes = this.setStrokes.bind(this);
     this.onredo = this.onredo.bind(this);
+    this.nextStroke = this.nextStroke.bind(this);
 
     this.canvasEl = canvasEl;
     this.isDrawing = false;
@@ -753,6 +754,10 @@ class Notepad {
     delete this.strokeHistory;
     this.strokeHistory = new StrokeHistory(strokes);
     this.canvas.refresh(this.strokeHistory);
+  }
+
+  nextStroke() {
+    return this.strokeHistory.nextStroke();
   }
 
 }

@@ -9,6 +9,12 @@
     <span class="toolbox__spacer"></span>
     <input class="toolbox__button --size" type="range" min="1" max="100" data-for-notepad="whiteboard" value="8" name="brushSize" />
     <span class="toolbox__spacer fill"></span>
+    <button class="toolbox__button button" onclick="document.dispatchEvent(new CustomEvent('notepad:undo'))" title="Undo">
+      <img class="toolbox__icon" src="/images/undo.svg" alt="undo" />
+    </button>
+    <button class="toolbox__button button" onclick="if (notepad.nextStroke()) document.dispatchEvent(new CustomEvent('notepad:redo', {detail: notepad.nextStroke()}))" title="Redo">
+      <img class="toolbox__icon" src="/images/redo.svg" alt="redo" />
+    </button>
     <button class="toolbox__button button" onclick="if (confirm('Reset everyone\'s whiteboard?')) document.dispatchEvent(new CustomEvent('notepad:reset'))">Reset</button>
   </div>
   <canvas id="board" data-notepad="whiteboard" class="notepad fill"></canvas>

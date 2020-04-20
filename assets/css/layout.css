@@ -21,12 +21,13 @@ body {
   padding: 10px 20px;
   border-bottom: 1px solid #331f00;
   display: flex;
+  align-items: center;
 }
 
 .site-header__nav {
   display: flex;
   flex: 1;
-  align-items: center;
+  align-items: baseline;
 }
 
 .site-header__title {

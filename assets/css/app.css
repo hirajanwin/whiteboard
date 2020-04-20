@@ -104,7 +104,7 @@ input[type="submit"]:hover {
 
 .toolbox .toolbox__button {
   padding: 4px 4px;
-  width: 34px;
+  min-width: 0px;
   height: 34px;
   cursor: pointer;
   -moz-appearance: none;
@@ -117,6 +117,8 @@ input[type="submit"]:hover {
   filter: grayscale(100%);
   border-radius: 0;
   border: none;
+  width: 34px;
+  height: 34px;
 }
 .toolbox .toolbox__button.--brush:checked {
   filter: none;
@@ -158,7 +160,13 @@ input[type="submit"]:hover {
   font-weight: 700;
   text-transform: uppercase;
   border: none;
-  color: #665c4b;;
+  color: #665c4b;
+}
+
+.toolbox .toolbox__icon {
+  width: 26px;
+  height: 26px;
+  padding: 0;
 }
 
 .notepad {
