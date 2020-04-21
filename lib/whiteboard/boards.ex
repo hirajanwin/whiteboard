@@ -10,6 +10,8 @@ defmodule Whiteboard.Boards do
   alias Whiteboard.Boards.Board
   alias Whiteboard.Boards.Stroke
 
+  @board_max_age 7 #days
+
   @doc """
   Returns the list of boards.
 
@@ -42,6 +44,11 @@ defmodule Whiteboard.Boards do
   def get_board_by_code!(code) do
     from(b in Board, where: b.code == ^code)
     |> Repo.one!
+  end
+
+  def get_boards_before(date) do
+    from(b in Board, where: b.inserted_at < ^date)
+    |> Repo.all
   end
 
   @doc """
@@ -156,6 +163,18 @@ defmodule Whiteboard.Boards do
       order_by: s.order,
       select: s.stroke)
     |> Repo.all
+  end
+
+  def clean_old_boards do
+    timeout_date = Timex.today
+      |> Timex.shift(days: -@board_max_age)
+      |> Timex.to_naive_datetime
+
+    boards = get_boards_before(timeout_date)
+    count = Enum.count(boards)
+    Enum.map(boards, fn board -> Repo.delete(board) end)
+
+    count
   end
 
 end
