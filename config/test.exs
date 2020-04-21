@@ -16,3 +16,6 @@ config :whiteboard, WhiteboardWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger, level: :warn
+
+# Module dependencies
+config :whiteboard, :boards, BoardsMock

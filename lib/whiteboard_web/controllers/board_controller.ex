@@ -2,11 +2,8 @@ defmodule WhiteboardWeb.BoardController do
   use WhiteboardWeb, :controller
 
   alias Whiteboard.Boards
-  alias Whiteboard.Boards.Board
 
   def new(conn, _params) do
-    changeset = Boards.change_board(%Board{})
-
     with {:ok, board} <- Boards.create_board(%{"code" => Boards.create_code()}) do
       conn
       |> put_flash(:info, "Board created")

@@ -60,5 +60,12 @@ defmodule Whiteboard.BoardsTest do
       board = board_fixture()
       assert %Ecto.Changeset{} = Boards.change_board(board)
     end
+
+    test "add_stroke/2 adds a stroke to a board" do
+      board = board_fixture()
+      assert Enum.count(Boards.get_board_strokes(board.code)) == 0
+      Boards.add_stroke(board.code, %{})
+      assert Enum.count(Boards.get_board_strokes(board.code)) == 1
+    end
   end
 end

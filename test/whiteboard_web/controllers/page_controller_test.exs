@@ -3,6 +3,12 @@ defmodule WhiteboardWeb.PageControllerTest do
 
   test "GET /", %{conn: conn} do
     conn = get(conn, "/")
-    assert html_response(conn, 200) =~ "Welcome to Phoenix!"
+    assert html_response(conn, 200) =~ "Whiteboard"
   end
+
+  test "GET /about", %{conn: conn} do
+    conn = get(conn, "/about")
+    assert html_response(conn, 200) =~ "About"
+  end
+
 end

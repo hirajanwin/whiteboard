@@ -1,16 +1,16 @@
 defmodule WhiteboardWeb.BoardChannel do
   use WhiteboardWeb, :channel
-  use Phoenix.Socket
-  alias Whiteboard.Boards
 
-  def join("board:lobby", payload, socket) do
-    socket = assign(socket, :board_code, "lobby")
+  defp boards, do: Application.get_env(:whiteboard, :boards)
+
+  def join("board:lobby", _payload, socket) do
+    socket = Phoenix.Socket.assign(socket, :board_code, "lobby")
     {:ok, %{strokes: []}, socket}
   end
 
-  def join("board:" <> code, payload, socket) do
-    socket = assign(socket, :board_code, code)
-    {:ok, %{strokes: Boards.get_board_strokes(code)}, socket}
+  def join("board:" <> code, _payload, socket) do
+    socket = Phoenix.Socket.assign(socket, :board_code, code)
+    {:ok, %{strokes: boards().get_board_strokes(code)}, socket}
   end
 
   def handle_in("notepad-cmd", payload, socket) do
@@ -25,13 +25,13 @@ defmodule WhiteboardWeb.BoardChannel do
   defp save_command(board_code, %{"type" => type} = payload) do
     case type do
       "stroke" ->
-        Boards.add_stroke(board_code, payload["stroke"])
+        boards().add_stroke(board_code, payload["stroke"])
       "undo" ->
-        Boards.undo_stroke(board_code)
+        boards().undo_stroke(board_code)
       "redo" ->
-        Boards.add_stroke(board_code, payload["stroke"])
+        boards().add_stroke(board_code, payload["stroke"])
       "reset" ->
-        Boards.reset_board(board_code)
+        boards().reset_board(board_code)
     end
   end
 

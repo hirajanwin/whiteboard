@@ -3,6 +3,8 @@ defmodule Whiteboard.Boards do
   The Boards context.
   """
 
+  @behaviour Whiteboard.Boards.BoardsBehaviour
+
   import Ecto.Query, warn: false
   alias Ecto
   alias Whiteboard.Repo
